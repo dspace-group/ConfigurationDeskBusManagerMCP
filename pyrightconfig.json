@@ -1,0 +1,36 @@
+{
+  "include": [
+    "ConfigurationDeskMCP/sources",
+    "configurationdesk_com_bridge"
+  ],
+  "exclude": [
+    "**/tests",
+    "**/.venv",
+    "**/build",
+    "**/dist",
+    "**/*.egg-info"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "ConfigurationDeskMCP",
+      "extraPaths": ["ConfigurationDeskMCP", "."]
+    },
+    {
+      "root": "configurationdesk_com_bridge",
+      "extraPaths": ["."]
+    }
+  ],
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Windows",
+  "venvPath": ".",
+  "venv": ".venv",
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false,
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportGeneralTypeIssues": "none"
+}

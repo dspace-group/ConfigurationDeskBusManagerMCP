@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "configurationdesk-mcp-server"
+version = "0.1.0"
+description = "MCP server for dSPACE ConfigurationDesk and BusManager"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [
+    {name = "dSPACE Group SE & Co. KG"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = [
+    "mcp>=1.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "configurationdesk-com-bridge>=0.1.0",
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+com = [
+    "pywin32>=306; sys_platform == 'win32'",
+]
+dev = [
+    "ruff>=0.4",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.urls]
+Homepage = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP"
+Repository = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP"
+Documentation = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP/tree/main/docs"
+Issues = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP/issues"
+
+[project.scripts]
+configurationdesk-mcp = "sources.main:main"
+
+[tool.setuptools]
+packages = [
+    "sources",
+    "sources.server",
+    "sources.config",
+    "sources.models",
+    "sources.services",
+    "sources.tools",
+    "sources.prompts",
+    "sources.resources",
+    "sources.utils",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--import-mode=importlib"

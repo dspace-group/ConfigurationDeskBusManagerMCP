@@ -1,0 +1,37 @@
+# Ruff configuration for the ConfigurationDesk MCP monorepo.
+#
+# Project style: line length 100, Black-compatible formatting, isort import
+# ordering, and error-focused pyflakes/pylint rules targeted by existing
+# `# noqa` hints.
+
+target-version = "py311"
+line-length = 100
+
+extend-exclude = [
+    ".venv",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[lint]
+# Error-focused baseline that passes cleanly on the current codebase. Stylistic
+# and modernization families (E501 line length, isort, pyupgrade, simplify,
+# blind-except) are intentionally left out of the CI gate for now; enable them
+# progressively after a dedicated `ruff check --fix` + `ruff format` pass.
+select = [
+    "E4",   # pycodestyle: import-placement errors
+    "E7",   # pycodestyle: statement errors
+    "E9",   # pycodestyle: syntax errors
+    "F",    # pyflakes
+    "PLE",  # pylint errors
+]
+
+[lint.isort]
+known-first-party = ["sources", "configurationdesk_com_bridge"]
+
+[lint.per-file-ignores]
+# Re-export packages intentionally import names they do not reference locally.
+"**/__init__.py" = ["F401"]
+# Tests import modules purely to trigger registration side effects.
+"**/tests/**" = ["F401"]

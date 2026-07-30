@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem with the ConfigurationDesk MCP Server.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, tokens, private project files, or confidential data.
+        Report suspected security vulnerabilities through the private channel in SECURITY.md.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the observed and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include the MCP host, server version, and minimal steps.
+      placeholder: |
+        1. Start the server with ...
+        2. Call ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Windows version, ConfigurationDesk version if applicable, and transport.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or error response
+      description: Include structured error_code and recovery_hint after removing confidential data.

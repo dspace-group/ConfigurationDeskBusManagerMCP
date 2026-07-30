@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint & test (py${{ matrix.python-version }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      UV_DEFAULT_INDEX: https://pypi.org/simple
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Sync workspace
+        run: uv sync --frozen --all-packages --python ${{ matrix.python-version }}
+
+      - name: Lint (ruff)
+        run: uv run --frozen ruff check --output-format=github .
+
+      - name: Format (ruff)
+        run: uv run --frozen ruff format --check .
+
+      - name: Type check (pyright)
+        run: uv run --frozen pyright
+
+      - name: Test (pytest)
+        run: >-
+          uv run --frozen pytest ConfigurationDeskMCP/tests
+          --cov=sources
+          --cov=configurationdesk_com_bridge
+          --cov-report=term-missing
+          --cov-report=xml:coverage.xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: error
+
+      - name: Dependency audit
+        run: uv run --frozen pip-audit --strict --desc
+
+      - name: Verify source CLI
+        shell: pwsh
+        run: |
+          uv run --frozen configurationdesk-mcp --version
+          uv run --frozen configurationdesk-mcp --list-tools
+          uv run --frozen configurationdesk-mcp --list-resources
+          uv run --frozen configurationdesk-mcp --list-prompts

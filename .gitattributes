@@ -1,0 +1,18 @@
+# Keep repository text portable across Windows and Unix hosts.
+* text=auto
+
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.ps1 text eol=lf
+*.txt text eol=lf
+
+*.exe -text
+*.dll -text
+*.pyd -text
+*.whl -text
+*.zip -text
+*.tar.gz -text

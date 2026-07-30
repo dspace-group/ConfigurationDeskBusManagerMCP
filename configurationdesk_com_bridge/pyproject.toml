@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "configurationdesk-com-bridge"
+version = "0.1.0"
+description = "Open-source COM bridge SDK for dSPACE ConfigurationDesk and Bus Manager, used by the ConfigurationDesk MCP Server"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [
+    {name = "dSPACE Group SE & Co. KG"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Software Development :: Libraries",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+com = ["pywin32>=306; sys_platform == 'win32'"]
+
+[project.urls]
+Homepage = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP"
+Repository = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP"
+Documentation = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP/tree/main/docs"
+Issues = "https://github.com/dspace-group/ConfigurationDeskBusManagerMCP/issues"
+
+[tool.setuptools]
+packages = [
+    "configurationdesk_com_bridge",
+    "configurationdesk_com_bridge.domains",
+    "configurationdesk_com_bridge.error_handling",
+]
+
+[tool.setuptools.package-dir]
+"configurationdesk_com_bridge" = "."

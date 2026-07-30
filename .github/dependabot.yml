@@ -1,0 +1,41 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      workspace-python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /ConfigurationDeskMCP
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      server-python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: pip
+    directory: /configurationdesk_com_bridge
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      bridge-python:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

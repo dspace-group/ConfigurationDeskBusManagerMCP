@@ -1,0 +1,57 @@
+name: Build Executable
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: executable-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_DEFAULT_INDEX: https://pypi.org/simple
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  build:
+    name: Build Windows executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Sync build environment
+        run: uv sync --frozen --all-packages --group build --python ${{ env.PYTHON_VERSION }}
+
+      - name: Validate source release content
+        shell: pwsh
+        run: ./scripts/validate-release.ps1 -SkipPackageBuild
+
+      - name: Build executable
+        shell: pwsh
+        run: ./scripts/build-exe.ps1
+
+      - name: Validate executable
+        shell: pwsh
+        run: ./scripts/validate-release.ps1 -SkipPackageBuild -ExecutablePath ./dist/configurationdesk-mcp.exe
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: configurationdesk-mcp-${{ github.sha }}
+          path: |
+            dist/configurationdesk-mcp.exe
+            dist/configurationdesk-mcp.exe.sha256
+            dist/configurationdesk-mcp-third-party-licenses.zip
+          retention-days: 30
+          if-no-files-found: error

@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  attestations: write
+  id-token: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  UV_DEFAULT_INDEX: https://pypi.org/simple
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  release:
+    name: Build and publish GitHub Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Resolve release version
+        id: version
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.Substring(1)
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Release version '$version' must use MAJOR.MINOR.PATCH."
+          }
+          "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Sync release environment
+        run: uv sync --frozen --all-packages --group build --python ${{ env.PYTHON_VERSION }}
+
+      - name: Validate release source
+        shell: pwsh
+        run: ./scripts/validate-release.ps1 -ExpectedVersion ${{ steps.version.outputs.value }}
+
+      - name: Build executable
+        shell: pwsh
+        run: ./scripts/build-exe.ps1
+
+      - name: Validate executable
+        shell: pwsh
+        run: ./scripts/validate-release.ps1 -ExpectedVersion ${{ steps.version.outputs.value }} -SkipPackageBuild -ExecutablePath ./dist/configurationdesk-mcp.exe
+
+      - name: Create release notes
+        shell: pwsh
+        run: |
+          @"
+          ## ConfigurationDesk MCP Server v${{ steps.version.outputs.value }}
+
+          ### Windows executable
+
+          `configurationdesk-mcp.exe` is a Windows x64 MCP stdio server. It
+          bundles Python and open-source Python dependencies only. It does not
+          include dSPACE ConfigurationDesk, a ConfigurationDesk license,
+          hardware drivers, dSPACE helper packages, or project assets.
+
+          Verify the executable before use:
+
+          ```powershell
+          Get-FileHash .\configurationdesk-mcp.exe -Algorithm SHA256
+          .\configurationdesk-mcp.exe --version
+          .\configurationdesk-mcp.exe --list-tools
+          ```
+
+          Compare the hash with `configurationdesk-mcp.exe.sha256`. The initial
+          executable is unsigned, so Windows may display a reputation warning.
+
+          ### Requirements
+
+          Use 64-bit Windows 10 or Windows 11. COM automation requires dSPACE
+          ConfigurationDesk 2026-A or later installed, licensed, and registered
+          for COM automation on the same machine.
+
+          ### Notices
+
+          See `LICENSE`, `THIRD-PARTY-NOTICES.md`, and
+          `configurationdesk-mcp-third-party-licenses.zip` in this release.
+          "@ | Set-Content -LiteralPath release-notes.md -Encoding utf8
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
+        with:
+          subject-path: |
+            dist/configurationdesk-mcp.exe
+            dist/configurationdesk-mcp.exe.sha256
+            dist/configurationdesk-mcp-third-party-licenses.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: v${{ steps.version.outputs.value }}
+          body_path: release-notes.md
+          files: |
+            dist/configurationdesk-mcp.exe
+            dist/configurationdesk-mcp.exe.sha256
+            dist/configurationdesk-mcp-third-party-licenses.zip
+            LICENSE
+            THIRD-PARTY-NOTICES.md

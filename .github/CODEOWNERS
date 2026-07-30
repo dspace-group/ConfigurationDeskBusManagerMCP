@@ -1,0 +1,7 @@
+# CODEOWNERS — defines review ownership for the ConfigurationDesk MCP repository.
+#
+# The main responsible person and deputy are documented in GOVERNANCE.md.
+# This global rule routes reviews to the main responsible person's GitHub account.
+
+# Global owner — applies to every file unless overridden by a later rule.
+*    @Akshay-r-rao
