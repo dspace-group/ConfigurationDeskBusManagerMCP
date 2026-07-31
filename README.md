@@ -248,7 +248,6 @@ CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows
 | docs/clients.md | Connect VS Code, Claude, custom clients |
 | docs/mcp-inspector.md | Test tools interactively in a browser |
 | docs/windows-executable.md | Download and verify the Windows executable |
-| [GOVERNANCE.md](GOVERNANCE.md) | Ownership, contribution, and release policy |
 
 **Domain knowledge** (ConfigurationDesk concepts and COM APIs) is delivered with licensed ConfigurationDesk documentation. This repository documents the MCP server and bridge behavior.
 
