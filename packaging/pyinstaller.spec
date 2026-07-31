@@ -5,7 +5,7 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 
-ROOT = Path(SPECPATH)
+ROOT = Path(SPECPATH).parent
 SERVER_ROOT = ROOT / "ConfigurationDeskMCP"
 TOOLS_ROOT = SERVER_ROOT / "sources" / "tools"
 

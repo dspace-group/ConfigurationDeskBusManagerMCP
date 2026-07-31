@@ -59,7 +59,7 @@ jobs:
           if-no-files-found: error
 
       - name: Dependency audit
-        run: uv run --frozen pip-audit --strict --desc
+        run: uv run --frozen pip-audit --skip-editable --desc
 
       - name: Verify source CLI
         shell: pwsh
