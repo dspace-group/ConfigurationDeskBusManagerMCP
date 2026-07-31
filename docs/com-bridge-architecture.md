@@ -119,9 +119,10 @@ The server lifespan starts the STA thread only; the COM connection is **deferred
 # ConfigurationDeskMCP/sources/server/app.py
 import configurationdesk_com_bridge as com_bridge
 
+
 @asynccontextmanager
 async def _lifespan(server):
-    await com_bridge.startup(...)    # start STA thread; CoInitialize on it
+    await com_bridge.startup(...)  # start STA thread; CoInitialize on it
     try:
         yield {}
     finally:
@@ -134,6 +135,7 @@ async def _lifespan(server):
 
 ```python
 # configurationdesk_com_bridge/__init__.py
+
 
 async def dispatch(fn: Callable[..., Any], *args: Any, timeout_ms: int | None = None) -> Any:
     """Submit fn(*args) to the STA thread and await the result.
@@ -163,7 +165,7 @@ The bridge connects with a default COM ProgID, overridable per deployment via th
 
 ```python
 # configurationdesk_com_bridge/connection.py
-PRODUCT_ID = "ConfigurationDesk.Application"   # env CONFIGURATIONDESK_PROGID overrides
+PRODUCT_ID = "ConfigurationDesk.Application"  # env CONFIGURATIONDESK_PROGID overrides
 ```
 
 Connection attaches to a running instance first (`GetActiveObject`) and falls back to launching one (`Dispatch`). If `DISP_E_MEMBERNOTFOUND` (`0x80020003`) is raised on a known method, a required COM object is not accessible - classified as `COM_MEMBER_NOT_FOUND` (`BridgeOperationError`).
@@ -193,13 +195,15 @@ def _release_all(self) -> None:
         if obj is not None:
             try:
                 import win32com.client
+
                 win32com.client.Dispatch.__del__(obj)
             except Exception:
                 pass
             finally:
                 setattr(self, attr, None)
     import gc
-    gc.collect()   # force finalisation of any remaining COM wrappers
+
+    gc.collect()  # force finalisation of any remaining COM wrappers
 ```
 
 ### UI-blocking calls
@@ -250,17 +254,17 @@ Representative mappings (`_HRESULT_MAP`):
 
 ```python
 # Normalised to unsigned 32-bit
-RPC_E_CALL_REJECTED   = 0x80010001  # STA busy — message box blocking
-RPC_E_DISCONNECTED    = 0x80010108  # COM server (ConfigurationDesk) process died
-RPC_E_SERVERFAULT     = 0x80010105  # Exception propagated from COM server
-RPC_E_WRONGTHREAD     = 0x8001010E  # Called from wrong apartment (bug in bridge)
-CO_E_SERVER_STOPPING  = 0x80004007  # COM server shutting down
-E_FAIL                = 0x80004005  # General unspecified failure
-E_INVALIDARG          = 0x80070057  # Invalid argument
-E_ACCESSDENIED        = 0x80070005  # No license / insufficient rights
-E_NOTIMPL             = 0x80004001  # Method not implemented in this version
+RPC_E_CALL_REJECTED = 0x80010001  # STA busy — message box blocking
+RPC_E_DISCONNECTED = 0x80010108  # COM server (ConfigurationDesk) process died
+RPC_E_SERVERFAULT = 0x80010105  # Exception propagated from COM server
+RPC_E_WRONGTHREAD = 0x8001010E  # Called from wrong apartment (bug in bridge)
+CO_E_SERVER_STOPPING = 0x80004007  # COM server shutting down
+E_FAIL = 0x80004005  # General unspecified failure
+E_INVALIDARG = 0x80070057  # Invalid argument
+E_ACCESSDENIED = 0x80070005  # No license / insufficient rights
+E_NOTIMPL = 0x80004001  # Method not implemented in this version
 DISP_E_MEMBERNOTFOUND = 0x80020003  # Method/property not in current CD version
-DISP_E_BADVARTYPE     = 0x80020008  # Wrong type passed to IDispatch
+DISP_E_BADVARTYPE = 0x80020008  # Wrong type passed to IDispatch
 
 RETRYABLE_HRESULTS = {RPC_E_CALL_REJECTED, RPC_E_DISCONNECTED, RPC_E_SERVERFAULT}
 ```
@@ -337,10 +341,12 @@ import json
 import pytest
 from unittest.mock import AsyncMock, patch
 
+
 @pytest.fixture
 def mock_dispatch():
     with patch("configurationdesk_com_bridge.dispatch", new_callable=AsyncMock) as m:
         yield m
+
 
 async def test_list_projects_returns_json(mock_dispatch):
     mock_dispatch.return_value = ["DemoProject"]
@@ -370,6 +376,7 @@ Test the `sta_thread.py` dispatch queue, timeout logic, and `error_handling/hres
 import pywintypes
 from configurationdesk_com_bridge.error_handling.hresult import classify_com_error
 from configurationdesk_com_bridge.errors import BridgeConnectionError
+
 
 def test_rpc_disconnected_maps_to_connection_error():
     # 0x80010108 RPC_E_DISCONNECTED == -2147417848 signed
@@ -404,10 +411,11 @@ Standard API tests measure response time. COM automation requires additional met
 ```python
 import time
 
+
 async def measure_marshaling_latency() -> float:
     """Return round-trip time in ms for a minimal COM call."""
     start = time.perf_counter()
-    await dispatch(domain_fn, conn)   # any lightweight COM read
+    await dispatch(domain_fn, conn)  # any lightweight COM read
     return (time.perf_counter() - start) * 1000
 ```
 
@@ -435,6 +443,7 @@ If marshaling latency exceeds these baselines, check the following:
 
 ```python
 import asyncio, time
+
 
 async def measure_sta_queue_depth() -> dict:
     """Fire 5 concurrent dispatches and measure actual vs expected time."""
@@ -480,6 +489,7 @@ Get-Process ConfigurationDesk* |
 ```python
 # In configurationdesk_com_bridge/connection.py health check
 import gc, ctypes, win32com.client
+
 
 def get_com_reference_count(com_obj) -> int:
     """Return the reference count of a COM object for leak detection."""

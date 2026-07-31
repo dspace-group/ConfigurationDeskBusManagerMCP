@@ -135,7 +135,7 @@ async def rename_project(name: str, new_name: str) -> str:
             return success_response(message=f"Project renamed to '{new_name}'", verified=True)
         return error_response(result.get("detail", "Rename failed"), transient=False)
     except BridgeError as exc:
-        return tool_error_result(exc)        # structured envelope + correlation id
+        return tool_error_result(exc)  # structured envelope + correlation id
     except Exception as e:
         logger.exception("Error renaming project")
         return error_response(str(e), transient=False)
@@ -150,6 +150,7 @@ First, declare the tool, Then set the [annotations](#6-tool-annotations), and fo
 ```python
 # sources/tools/project.py
 from sources.models.project_inputs import RenameProjectInput  # add to existing import
+
 
 @mcp.tool(
     name="rename_project",

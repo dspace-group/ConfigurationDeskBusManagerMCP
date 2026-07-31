@@ -41,12 +41,14 @@ These are the **only** symbols code outside this package should import:
 
 ```python
 from configurationdesk_com_bridge import (
-    startup,            # start the STA thread (fast; COM connection is deferred)
-    shutdown,           # disconnect COM and stop the STA thread
-    dispatch,           # await dispatch(fn, *args, timeout_ms=None) -> result
-    ensure_connected,   # establish the COM connection on first use
-    get_connection,     # the active ConfigurationDeskConnection
-    new_correlation_id, get_correlation_id, set_correlation_id,  # observability
+    startup,  # start the STA thread (fast; COM connection is deferred)
+    shutdown,  # disconnect COM and stop the STA thread
+    dispatch,  # await dispatch(fn, *args, timeout_ms=None) -> result
+    ensure_connected,  # establish the COM connection on first use
+    get_connection,  # the active ConfigurationDeskConnection
+    new_correlation_id,
+    get_correlation_id,
+    set_correlation_id,  # observability
 )
 from configurationdesk_com_bridge.errors import BridgeError  # + subclasses
 from configurationdesk_com_bridge.domains import project_com  # COM wrappers
@@ -61,9 +63,10 @@ import asyncio
 import configurationdesk_com_bridge as bridge
 from configurationdesk_com_bridge.domains import project_com
 
+
 async def main() -> None:
-    await bridge.startup()            # STA thread up; no COM yet
-    await bridge.ensure_connected()   # attach to / launch ConfigurationDesk
+    await bridge.startup()  # STA thread up; no COM yet
+    await bridge.ensure_connected()  # attach to / launch ConfigurationDesk
     conn = bridge.get_connection()
 
     # Domain functions take the connection as their first argument and MUST be
@@ -72,6 +75,7 @@ async def main() -> None:
     print(projects)
 
     await bridge.shutdown()
+
 
 asyncio.run(main())
 ```
