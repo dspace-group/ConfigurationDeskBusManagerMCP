@@ -48,7 +48,9 @@ def get_runtime_package_names(notice_path: Path) -> list[str]:
             if package_name != "Package" and set(package_name) != {"-"}:
                 package_names.append(package_name)
     if not package_names:
-        raise RuntimeError("No runtime and executable dependencies found in the third-party notice.")
+        raise RuntimeError(
+            "No runtime and executable dependencies found in the third-party notice."
+        )
     return package_names
 
 
