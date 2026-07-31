@@ -215,7 +215,7 @@ sources/services/<domain>_service.py      # business logic + error mapping
 sources/tools/<domain>.py                 # @mcp.tool handler
 ```
 
-Follow the step-by-step **Extending guide** (add a tool, add a domain, resources, prompts, testing) and the [**Contributing guide**](CONTRIBUTING.md). For ConfigurationDesk domain knowledge, refer to the documentation delivered with your licensed ConfigurationDesk release.
+Follow the step-by-step **Extending guide** (add a tool, add a domain, resources, prompts, testing). For ConfigurationDesk domain knowledge, refer to the documentation delivered with your licensed ConfigurationDesk release.
 
 ## Development
 
@@ -231,7 +231,7 @@ uv run pytest ConfigurationDeskMCP/tests
 uv run configurationdesk-mcp --list-tools
 ```
 
-CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows/ci.yml](.github/workflows/ci.yml)). See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow and the local quality gate.
+CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## Documentation
 
@@ -242,14 +242,12 @@ CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows
 | docs/com-bridge-architecture.md | STA thread, `dispatch()`, COM lifecycle |
 | docs/configuration.md | All settings, transports, client config |
 | docs/extending.md | Add tools, domains, resources, prompts |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup, standards, testing, PR workflow |
 | docs/tools/README.md | Per-domain tool reference + glossary |
 | docs/prompts/README.md | Prompt coverage and copy-and-adapt workflow requests |
 | docs/prompts/tool-map.md | All 77 tools mapped to a prompt or domain guide |
 | docs/clients.md | Connect VS Code, Claude, custom clients |
 | docs/mcp-inspector.md | Test tools interactively in a browser |
 | docs/windows-executable.md | Download and verify the Windows executable |
-| [GOVERNANCE.md](GOVERNANCE.md) | Ownership, contribution, and release policy |
 
 **Domain knowledge** (ConfigurationDesk concepts and COM APIs) is delivered with licensed ConfigurationDesk documentation. This repository documents the MCP server and bridge behavior.
 
