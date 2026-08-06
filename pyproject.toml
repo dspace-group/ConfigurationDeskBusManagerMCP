@@ -34,7 +34,7 @@ configurationdesk-com-bridge = { workspace = true }
 dev = [
     "pip-audit>=2.10.1",
     "pyright>=1.1.411",
-    "ruff>=0.16.0",
+    "ruff>=0.16.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
