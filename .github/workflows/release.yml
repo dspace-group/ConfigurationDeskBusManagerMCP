@@ -4,6 +4,16 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without the v prefix, for example 0.1.0
+        required: true
+        type: string
+      release_notes:
+        description: Optional Markdown release notes. Leave blank to use the built-in v0.1.0 notes.
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -35,12 +45,29 @@ jobs:
       - name: Resolve release version
         id: version
         shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          $version = $env:GITHUB_REF_NAME.Substring(1)
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            $expectedRef = "refs/heads/$($env:DEFAULT_BRANCH)"
+            if ($env:GITHUB_REF -ne $expectedRef) {
+              throw "Manual releases must run from '$env:DEFAULT_BRANCH'."
+            }
+            $version = $env:REQUESTED_VERSION
+          } else {
+            if ($env:GITHUB_REF_TYPE -ne "tag") {
+              throw "Release workflow must run from a semantic version tag."
+            }
+            $version = $env:GITHUB_REF_NAME.Substring(1)
+          }
+
           if ($version -notmatch '^\d+\.\d+\.\d+$') {
             throw "Release version '$version' must use MAJOR.MINOR.PATCH."
           }
+
           "value=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=v$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Sync release environment
         run: uv sync --frozen --all-packages --group build --python ${{ env.PYTHON_VERSION }}
@@ -59,9 +86,40 @@ jobs:
 
       - name: Create release notes
         shell: pwsh
+        env:
+          CUSTOM_RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
+          if (-not [string]::IsNullOrWhiteSpace($env:CUSTOM_RELEASE_NOTES)) {
+            Set-Content -LiteralPath release-notes.md -Value $env:CUSTOM_RELEASE_NOTES -Encoding utf8
+            exit 0
+          }
+
           @"
           ## ConfigurationDesk MCP Server v${{ steps.version.outputs.value }}
+
+          ### Overview
+
+          This initial release provides a Model Context Protocol server for
+          discovering and automating dSPACE ConfigurationDesk and Bus Manager
+          workflows through MCP-compatible clients.
+
+          ### What is included
+
+          The server exposes 77 tools across 12 domains, together with 11
+          resources and 15 workflow prompts. It supports:
+
+          - ConfigurationDesk startup, diagnostics, lifecycle, save, undo, and redo
+          - Project, application, and configuration-tree management
+          - Model topology, model ports, and application-process management
+          - Hardware-platform setup, imported topology, hardware scanning, and VEOS configuration
+          - Communication-matrix import and inspection for ARXML, DBC, and LDF inputs
+          - Bus configuration, restbus assignment, features, ports, BSC output, and bus access
+          - I/O function blocks, channel assignment, conflict-aware builds, and working views
+
+          Tool responses include structured success, verification, error,
+          recovery, and next-action information. Large read operations support
+          pagination, and tool annotations identify read-only, destructive,
+          idempotent, and external-system operations.
 
           ### Windows executable
 
@@ -81,11 +139,26 @@ jobs:
           Compare the hash with `configurationdesk-mcp.exe.sha256`. The initial
           executable is unsigned, so Windows may display a reputation warning.
 
-          ### Requirements
+          ### Requirements and compatibility
 
-          Use 64-bit Windows 10 or Windows 11. COM automation requires dSPACE
-          ConfigurationDesk 2026-A or later installed, licensed, and registered
-          for COM automation on the same machine.
+          - 64-bit Windows 10 or Windows 11
+          - A local, licensed ConfigurationDesk installation registered for COM automation when using COM tools
+          - ConfigurationDesk 2026-A (26.2) is the tested reference version; other compatible releases are not validated by this repository
+
+          ### Transport support
+
+          The supported public transport is local MCP stdio. Streamable HTTP is
+          disabled by default and, if explicitly enabled, must remain
+          loopback-only. It has no built-in authentication and must not be
+          exposed to an external or untrusted network.
+
+          ### Release assets
+
+          - `configurationdesk-mcp.exe`
+          - `configurationdesk-mcp.exe.sha256`
+          - `configurationdesk-mcp-third-party-licenses.zip`
+          - `LICENSE`
+          - `THIRD-PARTY-NOTICES.md`
 
           ### Notices
 
@@ -104,9 +177,12 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
-          tag_name: v${{ steps.version.outputs.value }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: v${{ steps.version.outputs.value }}
           body_path: release-notes.md
+          make_latest: true
+          fail_on_unmatched_files: true
           files: |
             dist/configurationdesk-mcp.exe
             dist/configurationdesk-mcp.exe.sha256
