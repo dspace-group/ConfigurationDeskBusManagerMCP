@@ -33,6 +33,7 @@ configurationdesk-com-bridge = { workspace = true }
 [dependency-groups]
 dev = [
     "pip-audit>=2.10.1",
+    "pip>=26.2",
     "pyright>=1.1.411",
     "ruff>=0.16.3",
     "pytest>=9.1.1",
