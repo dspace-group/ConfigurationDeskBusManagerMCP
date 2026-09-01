@@ -261,6 +261,12 @@ CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows
 | MCP host cannot start the server | Verify the absolute executable path or `uv run configurationdesk-mcp` command in the host configuration |
 | Conflicts with other Python versions installed in the system | Delete `.venv`; the next `ConfigurationDeskMCP.cmd` invocation recreates it |
 
+## Support
+
+For technical questions and issues related to the dSPACE MCP Servers and related GitHub repositories, please open a GitHub issue.
+
+As a valued dSPACE customer, you are always welcome to contact dSPACE Support directly via [http://www.dspace.com/go/supportrequest](http://www.dspace.com/go/supportrequest).
+
 ## License
 
 This project is licensed under the **Apache License, Version 2.0**. See [LICENSE](LICENSE) for the full text and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for dependency notices.
