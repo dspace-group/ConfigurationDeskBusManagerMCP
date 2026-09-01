@@ -125,7 +125,7 @@ try {
     }
 
     if (-not $SkipCommandChecks) {
-        Invoke-CheckedCommand "locked dependency resolution" { uv lock --locked }
+        Invoke-CheckedCommand "dependency resolution" { uv lock }
         Invoke-CheckedCommand "Ruff lint" { uv run --frozen ruff check . }
         Invoke-CheckedCommand "Ruff format" { uv run --frozen ruff format --check . }
         Invoke-CheckedCommand "deterministic tests" { uv run --frozen pytest ConfigurationDeskMCP/tests }
