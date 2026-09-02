@@ -149,7 +149,7 @@ def add_hardware_platform(
     VEOS is NOT a platform. For VEOS workflows:
     - Use generate_bus_containers to create BSC files
     - Import BSC files into VEOS separately
-    - Or use create_empty_hardware_topology for an empty topology (no download needed)
+    - Or use add_application_processing_unit for an empty topology (no download needed)
     """
     if platform_type.upper() == "VEOS":
         return {
@@ -159,7 +159,7 @@ def add_hardware_platform(
                 "For VEOS workflows: 1) Configure your bus configuration normally, "
                 "2) Call generate_bus_containers to generate BSC files, "
                 "3) Import the BSC files into VEOS to build an offline simulation application. "
-                "If you need a hardware topology for the build, use create_empty_hardware_topology."
+                "If you need a hardware topology for the build, use add_application_processing_unit."
             ),
         }
 
@@ -319,11 +319,6 @@ def add_application_processing_unit(connection) -> dict[str, Any]:
         "processing_unit_created": pu_created,
         "processing_unit_detail": pu_detail,
     }
-
-
-# Backwards compatibility alias for any internal callers still using the old
-# name. Public tool surface uses ``add_application_processing_unit``.
-create_empty_hardware_topology = add_application_processing_unit
 
 
 def import_hardware_topology(connection, path: str) -> dict[str, Any]:
