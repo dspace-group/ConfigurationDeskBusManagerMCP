@@ -9,6 +9,7 @@ correct next action instead of a cryptic COM error.
 from __future__ import annotations
 
 import functools
+import inspect
 import json
 from typing import Any, Callable, Coroutine
 
@@ -216,10 +217,8 @@ def with_preconditions(
 
                 # Some checks are sync, some async
                 if callable(check_fn):
-                    import asyncio  # noqa: PLC0415
-
                     try:
-                        if asyncio.iscoroutinefunction(check_fn):
+                        if inspect.iscoroutinefunction(check_fn):
                             met, detail = await check_fn()
                         else:
                             met, detail = check_fn()
