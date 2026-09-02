@@ -189,7 +189,3 @@ async def add_application_processing_unit() -> str:
     except Exception as e:
         logger.exception("Error adding application processing unit")
         return error_response(str(e), transient=False)
-
-
-# Backwards compatibility alias.
-create_empty_hardware_topology = add_application_processing_unit
