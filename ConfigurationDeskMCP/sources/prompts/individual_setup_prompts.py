@@ -223,7 +223,7 @@ wired to bus or I/O function ports.
 ## Step 1 — Add the model
 Call `add_model` with path="{model_path}".
 - .slx / .mdl — Simulink (analysis required).
-- .sic — Simulink implementation container (pre-compiled, ports already defined).
+- .sic — Simulink implementation container.
 - .bsc — Bus Simulation Container.
 
 ## Step 2 — Analyze (Simulink only)
