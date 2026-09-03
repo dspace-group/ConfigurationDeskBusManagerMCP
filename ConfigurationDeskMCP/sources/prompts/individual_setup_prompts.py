@@ -222,8 +222,9 @@ wired to bus or I/O function ports.
 
 ## Step 1 — Add the model
 Call `add_model` with path="{model_path}".
-- .slx / .mdl — Simulink (analysis required).
-- .sic — Simulink implementation container (pre-compiled, ports already defined).
+- .fmu — Functional Mock-up Unit (FMU)
+- .slx / .mdl — Simulink model (model analysis required).
+- .sic — Simulink implementation container.
 - .bsc — Bus Simulation Container.
 
 ## Step 2 — Analyze (Simulink only)
@@ -231,7 +232,7 @@ Call `analyze_models` to detect input/output ports and create model port blocks.
 Skip for .sic/.bsc (already analyzed).
 
 ## Step 3 — Inspect
-- `list_models` — confirm the model and its analysis state.
+- `list_models` — confirm the model and its model analysis state.
 - `list_model_ports` with model_name="{model_name}" — the available model ports.
 
 ## Step 4 — Expose ports in the signal chain
