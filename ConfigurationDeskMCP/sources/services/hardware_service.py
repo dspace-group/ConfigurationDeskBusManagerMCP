@@ -27,7 +27,7 @@ async def add_hardware_platform(ip_addresses: list[str], platform_type: str = "S
                 transient=False,
                 retryable=False,
                 next_action=(
-                    "VEOS is not a hardware platform. For VEOS workflows: "
+                    "VEOS is not a registered real-time hardware platform. For VEOS workflows: "
                     "1) Use generate_bus_containers to create BSC files, "
                     "2) Import BSC files into VEOS. "
                     "For SCALEXIO: ensure hardware is powered on and reachable."
@@ -159,33 +159,4 @@ async def add_hardware_element(element_type: str) -> str:
         return tool_error_result(exc)
     except Exception as e:
         logger.exception("Error adding hardware element")
-        return error_response(str(e), transient=False)
-
-
-async def add_application_processing_unit() -> str:
-    """Add a ProcessingUnitApplication to the application configuration.
-
-    Used for VEOS-targeted or no-hardware workflows.
-    """
-    try:
-        conn = get_connection()
-        result = await dispatch(hardware_com.add_application_processing_unit, conn)
-        pu_created = result.get("processing_unit_created", False)
-        if not pu_created:
-            return error_response(
-                f"ProcessingUnitApplication could not be added: {result.get('processing_unit_detail', '')}. "
-                "You may need to add it manually in ConfigurationDesk.",
-                transient=False,
-            )
-        return success_response(
-            message=(
-                "ProcessingUnitApplication added. "
-                "For VEOS: use generate_bus_containers to produce BSC files."
-            ),
-            verified=True,
-        )
-    except BridgeError as exc:
-        return tool_error_result(exc)
-    except Exception as e:
-        logger.exception("Error adding application processing unit")
         return error_response(str(e), transient=False)

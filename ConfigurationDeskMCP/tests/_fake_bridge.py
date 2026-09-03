@@ -201,7 +201,7 @@ def dispatch_returns() -> dict[str, Any]:
             "hardware_items": [etype or "Element"],
             "verified": True,
         },
-        "add_application_processing_unit": {
+        "add_processing_unit_application": {
             "processing_unit_created": True,
             "processing_unit_detail": "created",
         },

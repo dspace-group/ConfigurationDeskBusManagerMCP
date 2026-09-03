@@ -16,8 +16,7 @@ from sources.services import hardware_service as svc
         "BEFORE calling this tool, ASK the user which hardware approach they want: "
         "1) Provide address of SCALEXIO, MicroAutoBox III, or MicroLabBox II hardware → use this tool, "
         "2) Import an .htfx topology file → use import_hardware_topology, "
-        "3) Create empty topology (VEOS/no hardware) → use add_application_processing_unit. "
-        "VEOS is NOT a platform - never call this for VEOS. "
+        "VEOS is not a registered real-time hardware platform - never call this for VEOS. "
         "Returns the unique platform name for subsequent hardware operations."
     ),
     annotations={
@@ -38,7 +37,7 @@ async def add_hardware_platform(
     platform_type: Annotated[
         str,
         Field(
-            description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is not a platform.",
+            description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is not a real-time hardware platform.",
         ),
     ] = "SCALEXIO",
 ) -> str:
@@ -167,24 +166,3 @@ async def add_hardware_element(
     ],
 ) -> str:
     return await svc.add_hardware_element(element_type)
-
-
-@mcp.tool(
-    name="add_application_processing_unit",
-    description=(
-        "Add a ProcessingUnitApplication to the application configuration. "
-        "Use this for VEOS-targeted or no-hardware workflows where the project needs "
-        "an application processing unit to host I/O function blocks and application processes. "
-        "VEOS does NOT use registered hardware platforms; it consumes generated Bus "
-        "Simulation Containers (BSC)."
-    ),
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": False,
-    },
-)
-@with_preconditions("connection", "project", "application")
-async def add_application_processing_unit() -> str:
-    return await svc.add_application_processing_unit()
