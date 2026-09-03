@@ -222,6 +222,7 @@ wired to bus or I/O function ports.
 
 ## Step 1 — Add the model
 Call `add_model` with path="{model_path}".
+- .fmu — Functional Mock-up Unit (FMU)
 - .slx / .mdl — Simulink model (model analysis required).
 - .sic — Simulink implementation container.
 - .bsc — Bus Simulation Container.
