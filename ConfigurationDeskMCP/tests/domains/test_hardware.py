@@ -8,7 +8,6 @@ from tests.domains.conftest import run_ok
 COVERS = (
     "add_hardware_platform",
     "add_hardware_element",
-    "add_application_processing_unit",
     "import_hardware_topology",
     "scan_hardware",
     "remove_hardware",
@@ -25,10 +24,6 @@ def test_add_hardware_platform(fake_bridge):
 def test_add_hardware_element(fake_bridge):
     payload = run_ok(hw_svc.add_hardware_element("DS1513"))
     assert payload["element_name"] == "DS1513"
-
-
-def test_add_application_processing_unit(fake_bridge):
-    run_ok(hw_svc.add_application_processing_unit())
 
 
 def test_import_hardware_topology(fake_bridge):

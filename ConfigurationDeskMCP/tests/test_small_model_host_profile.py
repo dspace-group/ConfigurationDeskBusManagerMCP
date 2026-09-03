@@ -39,7 +39,7 @@ _ROUTING_RULES = (
     "`set_io_function_block_property`",
     "`add_hardware_platform`",
     "`import_hardware_topology`",
-    "`add_application_processing_unit`",
+    "`add_processing_unit_application`",
     "`add_model_to_signal_chain`",
     "`add_model_port_to_signal_chain`",
     "`create_preconfigured_application_process`",

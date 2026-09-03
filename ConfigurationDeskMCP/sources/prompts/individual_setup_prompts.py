@@ -258,7 +258,7 @@ Goal: provide execution scheduling — mirrors the UI command
 
 ## Prerequisite
 A ProcessingUnitApplication must exist: register a hardware platform
-(`add_hardware_platform`) or, for VEOS/no-hardware, call `add_application_processing_unit`.
+(`add_hardware_platform`) or, for VEOS/no-hardware, call `add_processing_unit_application`.
 
 ## Step 1 — Create the process (default periodic task)
 Call `create_application_process` with name="{process_name}". This sets
@@ -386,7 +386,7 @@ Call `get_build_result` to retrieve the build output directory (contains the .rt
 
 @mcp.prompt(
     name="register_hardware",
-    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform, import an .htfx file, or add a VEOS processing unit",
+    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform, import an .htfx file, or add a processing unit application for VEOS",
 )
 def register_hardware(
     platform_type: str = "SCALEXIO",
@@ -410,7 +410,8 @@ Returns the unique platform name used by later hardware operations.
 Call `import_hardware_topology` with path="C:/HW/topology.htfx".
 
 ### Option C — VEOS / no hardware
-Call `add_application_processing_unit`. VEOS is NOT a platform — do NOT call
+Call `add_processing_unit_application`. VEOS is not a registered real-time hardware
+platform — do NOT call
 `add_hardware_platform` for it. The deliverable is the generated BSC.
 
 ## Verify / maintain
@@ -477,7 +478,7 @@ This is the CAN/LIN/Ethernet path — for analog/digital I/O use the `add_io_fun
 ## Prerequisite
 - A bus configuration with assigned ECUs (see `create_bus_configuration`).
 - Hardware present: `add_hardware_platform` / `import_hardware_topology`, or
-  `add_application_processing_unit` for VEOS (then skip channel assignment).
+  `add_processing_unit_application` for VEOS (then skip channel assignment).
 
 ## Step 1 — Inspect what needs hardware
 Call `list_bus_access_requests` — each cluster/part generates one request to assign.

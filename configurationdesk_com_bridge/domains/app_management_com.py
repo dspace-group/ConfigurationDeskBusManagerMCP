@@ -102,3 +102,68 @@ def list_applications(connection) -> dict[str, Any]:
         except Exception:
             pass
     return {"applications": apps, "active": active}
+
+
+def _create_processing_unit_application(connection) -> tuple[bool, str]:
+    """Create a ProcessingUnitApplication child under the top ApplicationConfiguration node.
+
+    Returns (created, detail). ``created=False`` means the call did not succeed
+    but was not fatal.
+    """
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception as exc:
+        return False, f"ApplicationConfiguration relation not available: {exc}"
+
+    try:
+        top_nodes = atm_relation.GetTopNodes()
+        if top_nodes.Count == 0:
+            return False, "ApplicationConfiguration has no top-level execution application"
+        exec_application = top_nodes.Item(0)
+    except Exception as exc:
+        return False, f"Cannot read execution application: {exc}"
+
+    # Preferred path: GetCreatableTypes + CreateDataObject (matches COM examples).
+    try:
+        creatable = atm_relation.GetCreatableTypes(exec_application)
+        target_type = None
+        for idx in range(1, creatable.Count + 1):
+            cand = creatable.Item(idx)
+            try:
+                cand_name = cand.Name
+            except Exception:
+                continue
+            if cand_name == "ProcessingUnitApplication":
+                target_type = cand
+                break
+        if target_type is None and creatable.Count > 0:
+            target_type = creatable.Item(1)
+        if target_type is not None:
+            atm_relation.CreateDataObject(target_type, exec_application)
+            return True, "Created via GetCreatableTypes/CreateDataObject"
+    except Exception as exc:
+        _log.debug("CreateDataObject path failed: %s", exc)
+
+    # Fallback: CreateChild on the execution application using DataObjectTypes.
+    try:
+        type_obj = exec_application.DataObjectTypes.Item("ProcessingUnitApplication")
+        exec_application.CreateChild(type_obj)
+        return True, "Created via CreateChild"
+    except Exception as exc:
+        return False, f"Cannot create ProcessingUnitApplication: {exc}"
+
+
+def add_processing_unit_application(connection) -> dict[str, Any]:
+    """Add a processing unit application to the executable application.
+
+    A processing unit application is a component of every executable application
+    that hosts one or more application processes. This adds one explicitly under
+    the top-level ApplicationConfiguration node, which is needed when no registered
+    hardware or imported topology already provides one — typically a no-hardware or
+    VEOS/BSC build.
+    """
+    pu_created, pu_detail = _create_processing_unit_application(connection)
+    return {
+        "processing_unit_created": pu_created,
+        "processing_unit_detail": pu_detail,
+    }

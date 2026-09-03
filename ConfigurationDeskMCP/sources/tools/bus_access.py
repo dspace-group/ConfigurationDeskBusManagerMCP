@@ -387,7 +387,7 @@ async def auto_connect_matching_io_function_blocks_to_model_ports() -> str:
         "Create a pre-configured application process for one specific model. "
         "Calls Algorithms.CreatePreConfiguredApplicationProcessAutomatically([model], None). "
         "A new ProcessingUnitApplication is created automatically when no Parent is supplied "
-        "(VEOS workflows: ensure `add_application_processing_unit` was called first). "
+        "(VEOS workflows: ensure `add_processing_unit_application` was called first). "
         "For all-models behavior, prefer create_application_process or pass `model_names` to it."
     ),
     annotations={

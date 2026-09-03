@@ -91,7 +91,7 @@ Bus and matrix elements can be queried using XPath expressions:
 ## Hardware Platforms
 SCALEXIO, MicroAutoBox III, and MicroLabBox II platforms are registered by
 address and scanned to create the hardware topology. Use `list_platforms` to see
-registered hardware. VEOS is NOT a platform — use `add_application_processing_unit`.
+registered hardware. VEOS is not a registered real-time hardware platform — use `add_processing_unit_application`.
 """
 
 _TOOL_CATEGORIES = """\
@@ -597,7 +597,7 @@ names see `configurationdesk://reference/xpath`.
 - `SCALEXIO`
 - `MicroAutoBox III`
 - `MicroLabBox II`
-(VEOS is NOT a platform — use `add_application_processing_unit`.)
+(VEOS is not a registered real-time hardware platform — use `add_processing_unit_application`.)
 
 ## `bus_type` (create_io_function_block)
 - `CAN`

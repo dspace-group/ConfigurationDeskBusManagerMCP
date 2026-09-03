@@ -71,8 +71,8 @@ For .slx/.mdl also call `analyze_models`; .sic/.bsc are already analyzed.
 Then `add_model_to_signal_chain` to expose the model ports.
 
 ## Step 6 — Provide scheduling
-A processing unit must exist. For real hardware, register it with
-`add_hardware_platform`; for VEOS/offline, call `add_application_processing_unit`.
+A processing unit application must exist. For real hardware, register a platform with
+`add_hardware_platform`; for a VEOS/no-hardware build, call `add_processing_unit_application`.
 Then `create_application_process` (auto-assigned to "{bus_config_name}").
 
 ## Step 7 — Connect the ports

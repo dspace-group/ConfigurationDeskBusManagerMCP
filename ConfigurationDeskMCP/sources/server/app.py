@@ -104,8 +104,8 @@ prerequisites.
 13. Hardware topology → ASK USER which approach:
     - `add_hardware_platform` → register SCALEXIO, MicroAutoBox III, or MicroLabBox II hardware (needs address from user)
     - `import_hardware_topology` → import .htfx file (needs file path from user)
-    - `add_application_processing_unit` → no physical hardware / VEOS workflow
-    - VEOS does NOT need platform registration. Use generate_bus_containers for BSC files.
+    - `add_processing_unit_application` → no physical hardware / VEOS workflow
+    - VEOS is not a registered real-time hardware platform; use generate_bus_containers to produce the BSC files it consumes.
 14. `create_io_function_block` → create CAN/LIN/Ethernet I/O block
 15. `set_io_function_block_property` → set BaudRate
 16. `assign_bus_access` → link bus access requests to function block

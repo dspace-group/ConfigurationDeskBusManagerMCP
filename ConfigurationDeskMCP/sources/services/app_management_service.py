@@ -81,3 +81,34 @@ async def list_applications() -> str:
     except Exception as e:
         logger.exception("Error listing applications")
         return error_response(str(e), transient=False)
+
+
+async def add_processing_unit_application() -> str:
+    """Add a processing unit application to the executable application.
+
+    A processing unit application hosts one or more application processes. Add one
+    explicitly when no registered hardware or imported topology already provides
+    one — typically a no-hardware or VEOS build.
+    """
+    try:
+        conn = await _get_live_connection()
+        result = await dispatch(app_management_com.add_processing_unit_application, conn)
+        pu_created = result.get("processing_unit_created", False)
+        if not pu_created:
+            return error_response(
+                f"ProcessingUnitApplication could not be added: {result.get('processing_unit_detail', '')}. "
+                "You may need to add it manually in ConfigurationDesk.",
+                transient=False,
+            )
+        return success_response(
+            message=(
+                "ProcessingUnitApplication added. "
+                "For VEOS: use generate_bus_containers to produce BSC files."
+            ),
+            verified=True,
+        )
+    except BridgeError as exc:
+        return tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error adding processing unit application")
+        return error_response(str(e), transient=False)
