@@ -572,7 +572,7 @@ at any time to understand the current state.
 Call `get_application_status` — project name, project root, and active application.
 
 ## Configuration tree
-Call `list_configuration` — executable applications, processing units, tasks, events.
+Call `list_configuration` — executable applications, processing unit applications, application processes, tasks, events.
 
 ## Inventory
 - `list_applications` — applications in the project.

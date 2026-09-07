@@ -88,15 +88,20 @@ async def add_processing_unit_application() -> str:
 
     A processing unit application hosts one or more application processes. Add one
     explicitly when no registered hardware or imported topology already provides
-    one — typically a no-hardware or VEOS build.
+    one — typically a no-hardware or VEOS build. The build generates one real-time
+    application per processing unit application, each running on one processing
+    unit (hardware): a single application process yields a single-core real-time
+    application, while multiple application processes yield a multicore real-time
+    application on multiple cores of that processing unit.
     """
     try:
         conn = await _get_live_connection()
         result = await dispatch(app_management_com.add_processing_unit_application, conn)
-        pu_created = result.get("processing_unit_created", False)
-        if not pu_created:
+        pua_created = result.get("processing_unit_application_created", False)
+        if not pua_created:
             return error_response(
-                f"ProcessingUnitApplication could not be added: {result.get('processing_unit_detail', '')}. "
+                f"ProcessingUnitApplication could not be added: "
+                f"{result.get('processing_unit_application_detail', '')}. "
                 "You may need to add it manually in ConfigurationDesk.",
                 transient=False,
             )

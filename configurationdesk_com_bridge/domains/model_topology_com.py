@@ -137,8 +137,9 @@ def _iter_relation_descendants(rel, parent):
 def _resolve_processing_unit_application(connection, atm_relation):
     """Locate the ProcessingUnitApplication under the executable application.
 
-    Returns ``(pu_application, error_detail)``. When the PU cannot be found,
-    ``pu_application`` is ``None`` and ``error_detail`` describes the cause.
+    Returns ``(pua, error_detail)``. When the processing unit application
+    cannot be found, ``pua`` is ``None`` and ``error_detail`` describes the
+    cause.
     """
     try:
         top_nodes = atm_relation.GetTopNodes()
@@ -159,24 +160,24 @@ def _resolve_processing_unit_application(connection, atm_relation):
     except Exception as exc:
         return None, f"Cannot enumerate ApplicationConfiguration descendants: {exc}"
 
-    pu_application = None
+    pua = None
     for el in descendants:
         try:
             roles = list(el.Roles)
         except Exception:
             roles = []
         if "ProcessingUnitApplication" in roles:
-            pu_application = el
+            pua = el
             break
 
-    if pu_application is None:
+    if pua is None:
         return None, (
             "No ProcessingUnitApplication is available under the active executable application. "
             "ConfigurationDesk treats hardware topology and processing-unit applications as separate "
             "configuration objects; register/import hardware for processing-unit assignment, then add a "
             "ProcessingUnitApplication explicitly before creating an application process."
         )
-    return pu_application, ""
+    return pua, ""
 
 
 def _set_provide_default_task(process) -> tuple[bool, str]:
@@ -401,14 +402,14 @@ def create_application_process(
     except Exception as exc:
         return {"error": True, "detail": f"ApplicationConfiguration relation not available: {exc}"}
 
-    pu_application, detail = _resolve_processing_unit_application(connection, atm_relation)
-    if pu_application is None:
+    pua, detail = _resolve_processing_unit_application(connection, atm_relation)
+    if pua is None:
         return {"error": True, "detail": detail}
 
     before_processes = set(list_application_process_names(connection))
 
     # 1) Create the application process.
-    process = _create_data_object(atm_relation, pu_application, "ApplicationProcess")
+    process = _create_data_object(atm_relation, pua, "ApplicationProcess")
     if process is None:
         return {
             "error": True,

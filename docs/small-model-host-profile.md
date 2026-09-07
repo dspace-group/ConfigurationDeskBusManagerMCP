@@ -60,8 +60,8 @@ authoritative.
 - Use `list_bus_configurations` for top-level configuration names. Use
   `find_bus_config_elements` to inspect elements or exposed ports inside a
   selected configuration.
-- Use `list_configuration` to inspect processing units, application processes,
-  tasks, and events before changing them.
+- Use `list_configuration` to inspect processing unit applications, application
+  processes, tasks, and events before changing them.
 - Use `analyze_models` to discover model interfaces and ports. Use
   `check_conflicts` to validate the configured application before a build or
   hardware download; neither tool substitutes for the other.

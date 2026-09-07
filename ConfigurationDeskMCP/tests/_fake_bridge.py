@@ -202,8 +202,8 @@ def dispatch_returns() -> dict[str, Any]:
             "verified": True,
         },
         "add_processing_unit_application": {
-            "processing_unit_created": True,
-            "processing_unit_detail": "created",
+            "processing_unit_application_created": True,
+            "processing_unit_application_detail": "created",
         },
         "import_hardware_topology": {"verified": True, "hardware_items": ["SCALEXIO_Rack"]},
         "scan_hardware": {"verified": True, "hardware_items": ["SCALEXIO_Rack"]},
