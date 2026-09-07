@@ -22,7 +22,7 @@ from sources.services import model_topology_service as svc
     name="add_model",
     description=(
         "Add a behavior model file to the project's model topology. "
-        "SUPPORTED FORMATS: .slx/.mdl (Simulink), .sic (pre-compiled SIC), .bsc (Bus Simulation Container). "
+        "SUPPORTED FORMATS: .slx/.mdl (Simulink), .sic (Simulink implementation container), .bsc (Bus Simulation Container). "
         "For .sic/.bsc files, analysis is skipped since ports are already defined. "
         "For Simulink models, set analyze=true (default) to detect model ports. "
         "WORKFLOW: add_model → analyze_models → create_application_process → "
