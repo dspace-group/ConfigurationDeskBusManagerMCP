@@ -27,7 +27,7 @@ async def add_hardware_platform(ip_addresses: list[str], platform_type: str = "S
                 transient=False,
                 retryable=False,
                 next_action=(
-                    "VEOS is not a registered real-time hardware platform. For VEOS workflows: "
+                    "VEOS is not a real-time hardware platform and cannot be registered in ConfigurationDesk. For VEOS workflows: "
                     "1) Use generate_bus_containers to create BSC files, "
                     "2) Import BSC files into VEOS. "
                     "For SCALEXIO: ensure hardware is powered on and reachable."

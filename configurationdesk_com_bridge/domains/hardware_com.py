@@ -3,20 +3,23 @@
 All functions must be called on the STA thread via dispatch().
 
 IMPORTANT CONCEPTS:
-- Hardware platforms (SCALEXIO, MicroAutoBox III, MicroLabBox II) are registered via
-  PlatformManagement.RegisterPlatform and then scanned to create a hardware topology.
-  In ConfigurationDesk a "platform" is a registered dSPACE real-time hardware system.
-- VEOS is a PC-based simulation platform, not a registered real-time hardware platform,
-  so it is not registered here. For VEOS, the Bus Manager generates Bus Simulation
-  Containers (BSC) via BusManager.Configure("GenerateContainers", []); the BSCs are then
-  imported into VEOS, which builds the offline simulation application. ConfigurationDesk
-  itself always builds a real-time application.
-- A hardware topology is a separate object from a processing unit application. A hardware
-  topology can be created in three ways:
-  Mode 0: Scan registered hardware platform
+In ConfigurationDesk a platform is a dSPACE real-time hardware system.
+Hardware platforms (SCALEXIO, MicroAutoBox III, MicroLabBox II) can be registered via
+PlatformManagement.RegisterPlatform.
+
+VEOS is a PC-based simulation platform, not a real-time hardware platform. For building offline
+simulation applications, the dSPACE product VEOS is necessary. Bus Simulation Containers (BSCs) that
+are generated with the Bus Manager via BusManager.Configure("GenerateContainers", [])  can either
+be used in ConfigurationDesk applications to create a real-time application or can be imported to
+VEOS to perform SIL simulation.
+
+A hardware topology is a component of a ConfigurationDesk application that contains information on
+specific hardware systems.  A hardware topology can be created in three ways:
+  Mode 0: Scan registered platform
   Mode 1: Import .htfx file
-  Mode 2: Create empty topology (no-hardware/VEOS scenarios); a processing unit
-          application is added separately to host application processes
+  Mode 2: Create hardware topology from scratch.
+
+For the generation of a BSC, an empty hardware topology is sufficient.
 """
 
 from __future__ import annotations
@@ -151,21 +154,18 @@ def add_hardware_platform(
 ) -> dict[str, Any]:
     """Register and scan a SCALEXIO hardware platform by IP address(es).
 
-    VEOS is not a registered real-time hardware platform. For VEOS workflows:
+    VEOS is not a real-time hardware platform and cannot be registered in ConfigurationDesk. For VEOS workflows:
     - Use generate_bus_containers to create BSC files
     - Import the BSC files into VEOS, which builds the offline simulation application
-    - Or use add_processing_unit_application to add a processing unit application for a
-      no-hardware build (no download needed)
     """
     if platform_type.upper() == "VEOS":
         return {
             "error": True,
             "detail": (
-                "VEOS is not a registered real-time hardware platform and cannot be registered here. "
+                "VEOS is not a real-time hardware platform and cannot be registered here. "
                 "For VEOS workflows: 1) Configure your bus configuration normally, "
                 "2) Call generate_bus_containers to generate BSC files, "
                 "3) Import the BSC files into VEOS, which builds the offline simulation application. "
-                "If you need a processing unit application for the build, use add_processing_unit_application."
             ),
         }
 

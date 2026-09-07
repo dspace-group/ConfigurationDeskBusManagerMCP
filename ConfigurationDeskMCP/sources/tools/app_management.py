@@ -79,7 +79,7 @@ async def list_applications() -> str:
         "A processing unit application is a component of every executable application "
         "that hosts one or more application processes. Add one explicitly when no "
         "registered hardware or imported topology already provides one — typically a "
-        "no-hardware or VEOS build. VEOS is not a registered real-time hardware platform; "
+        "no-hardware or VEOS build. VEOS is not a real-time hardware platform; "
         "it consumes generated Bus Simulation Containers (BSC). "
         "The build generates one real-time application per processing unit application, "
         "each running on one processing unit (hardware): a single application process "

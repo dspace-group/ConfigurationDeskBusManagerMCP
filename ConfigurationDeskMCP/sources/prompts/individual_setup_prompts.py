@@ -410,7 +410,7 @@ Returns the unique platform name used by later hardware operations.
 Call `import_hardware_topology` with path="C:/HW/topology.htfx".
 
 ### Option C — VEOS / no hardware
-Call `add_processing_unit_application`. VEOS is not a registered real-time hardware
+Call `add_processing_unit_application`. VEOS is not a real-time hardware
 platform — do NOT call
 `add_hardware_platform` for it. The deliverable is the generated BSC.
 

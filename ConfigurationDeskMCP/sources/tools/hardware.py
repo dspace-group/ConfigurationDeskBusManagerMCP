@@ -16,7 +16,7 @@ from sources.services import hardware_service as svc
         "BEFORE calling this tool, ASK the user which hardware approach they want: "
         "1) Provide address of SCALEXIO, MicroAutoBox III, or MicroLabBox II hardware → use this tool, "
         "2) Import an .htfx topology file → use import_hardware_topology, "
-        "VEOS is not a registered real-time hardware platform - never call this for VEOS. "
+        "VEOS is not a real-time hardware platform - never call this for VEOS. "
         "Returns the unique platform name for subsequent hardware operations."
     ),
     annotations={
