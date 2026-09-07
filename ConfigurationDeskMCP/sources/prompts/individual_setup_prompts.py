@@ -227,9 +227,9 @@ Call `add_model` with path="{model_path}".
 - .sic — Simulink implementation container.
 - .bsc — Bus Simulation Container.
 
-## Step 2 — Analyze (Simulink only)
+## Step 2 — Analyze (Simulink model only)
 Call `analyze_models` to detect input/output ports and create model port blocks.
-Skip for .sic/.bsc (already analyzed).
+Skip for .sic/.bsc/.fmu (already analyzed).
 
 ## Step 3 — Inspect
 - `list_models` — confirm the model and its model analysis state.
