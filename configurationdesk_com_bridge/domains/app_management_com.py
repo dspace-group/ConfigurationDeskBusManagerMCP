@@ -118,10 +118,10 @@ def _create_processing_unit_application(connection) -> tuple[bool, str]:
     try:
         top_nodes = atm_relation.GetTopNodes()
         if top_nodes.Count == 0:
-            return False, "ApplicationConfiguration has no top-level execution application"
+            return False, "ApplicationConfiguration has no top-level executable application"
         exec_application = top_nodes.Item(0)
     except Exception as exc:
-        return False, f"Cannot read execution application: {exc}"
+        return False, f"Cannot read executable application: {exc}"
 
     # Preferred path: GetCreatableTypes + CreateDataObject (matches COM examples).
     try:
@@ -144,7 +144,7 @@ def _create_processing_unit_application(connection) -> tuple[bool, str]:
     except Exception as exc:
         _log.debug("CreateDataObject path failed: %s", exc)
 
-    # Fallback: CreateChild on the execution application using DataObjectTypes.
+    # Fallback: CreateChild on the executable application using DataObjectTypes.
     try:
         type_obj = exec_application.DataObjectTypes.Item("ProcessingUnitApplication")
         exec_application.CreateChild(type_obj)
@@ -158,12 +158,12 @@ def add_processing_unit_application(connection) -> dict[str, Any]:
 
     A processing unit application is a component of every executable application
     that hosts one or more application processes. This adds one explicitly under
-    the top-level ApplicationConfiguration node, which is needed when no registered
-    hardware or imported topology already provides one — typically a no-hardware or
-    VEOS/BSC build.
+    the top-level ApplicationConfiguration node. A real-time application that can 
+    be built with ConfigurationDesk requires exactly one processing unit, 
+    e.g. a SCALEXIO processing unit, for each processing unit application.
     """
-    pu_created, pu_detail = _create_processing_unit_application(connection)
+    pua_created, pua_detail = _create_processing_unit_application(connection)
     return {
-        "processing_unit_created": pu_created,
-        "processing_unit_detail": pu_detail,
+        "processing_unit_application_created": pua_created,
+        "processing_unit_application_detail": pua_detail,
     }
