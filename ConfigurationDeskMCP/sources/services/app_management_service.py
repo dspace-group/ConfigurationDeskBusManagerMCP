@@ -86,13 +86,10 @@ async def list_applications() -> str:
 async def add_processing_unit_application() -> str:
     """Add a processing unit application to the executable application.
 
-    A processing unit application hosts one or more application processes. Add one
-    explicitly when no registered hardware or imported topology already provides
-    one — typically a no-hardware or VEOS build. The build generates one real-time
-    application per processing unit application, each running on one processing
-    unit (hardware): a single application process yields a single-core real-time
-    application, while multiple application processes yield a multicore real-time
-    application on multiple cores of that processing unit.
+    An executable application has one or more processing unit applications (PUA);
+    each PUA is executed on one processing unit (PU) and hosts one or more
+    application processes (AP). Add one explicitly when no registered hardware or
+    imported topology already provides one — typically a no-hardware or VEOS build.
     """
     try:
         conn = await _get_live_connection()

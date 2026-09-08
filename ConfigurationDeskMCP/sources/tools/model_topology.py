@@ -112,11 +112,7 @@ async def analyze_models() -> str:
         "Pass `bus_config_names` to scope the assignment to specific configurations, or pass an "
         "empty list `[]` to skip assignment entirely. "
         "PRECONDITION: a ProcessingUnitApplication must exist (register a hardware platform or call "
-        "`add_processing_unit_application` for VEOS workflows). "
-        "CORES: the build generates one real-time application per processing unit application. "
-        "A processing unit application with a single application process builds a single-core "
-        "real-time application; adding more application processes builds a multicore real-time "
-        "application that runs on multiple cores of one processing unit."
+        "`add_processing_unit_application` for VEOS workflows)."
     ),
     annotations={
         "readOnlyHint": False,

@@ -15,13 +15,6 @@ hardware or processing-unit setup, and no blocking conflicts.
 The runtime schema for `build_application` accepts `download`, `start`, and
 `unload`. Use `download=false` when hardware download is not wanted.
 
-The build generates one real-time application per processing unit application,
-and each real-time application runs on one processing unit (hardware). A
-processing unit application with a single application process builds a
-single-core real-time application; multiple application processes build a
-multicore real-time application that runs on multiple cores of that one
-processing unit.
-
 ## Safe Build Sequence
 
 1. Call `check_conflicts` after configuration changes.

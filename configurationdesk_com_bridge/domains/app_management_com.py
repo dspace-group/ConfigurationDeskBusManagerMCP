@@ -156,15 +156,10 @@ def _create_processing_unit_application(connection) -> tuple[bool, str]:
 def add_processing_unit_application(connection) -> dict[str, Any]:
     """Add a processing unit application to the executable application.
 
-    A processing unit application is a component of every executable application
-    that hosts one or more application processes. This adds one explicitly under
-    the top-level ApplicationConfiguration node. Each processing unit application
-    maps to one processing unit (hardware), e.g. one SCALEXIO processing unit,
-    and the build generates one real-time application per processing unit
-    application. When a processing unit application hosts a single application
-    process the build produces a single-core real-time application; with multiple
-    application processes it produces a multicore real-time application that runs
-    on multiple cores of that one processing unit.
+    An executable application has one or more processing unit applications (PUA);
+    each PUA is executed on one processing unit (PU) and hosts one or more
+    application processes (AP). This adds one explicitly under the top-level
+    ApplicationConfiguration node.
     """
     pua_created, pua_detail = _create_processing_unit_application(connection)
     return {

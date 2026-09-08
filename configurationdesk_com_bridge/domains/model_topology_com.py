@@ -147,10 +147,7 @@ def _resolve_processing_unit_application(connection, atm_relation):
         return None, f"Cannot read ApplicationConfiguration top nodes: {exc}"
     try:
         if top_nodes.Count == 0:
-            return None, (
-                "ApplicationConfiguration has no top-level executable application. "
-                "Register a hardware platform or call add_processing_unit_application first."
-            )
+            return None, "ApplicationConfiguration has no top-level executable application."
         exec_app = top_nodes.Item(0)
     except Exception as exc:
         return None, f"Cannot access executable application: {exc}"

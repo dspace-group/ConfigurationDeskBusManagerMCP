@@ -15,6 +15,10 @@ for project-scoped model, matrix, bus, hardware, and build work.
 | `list_applications` | List applications and their active status. | Read-only. |
 | `add_processing_unit_application` | Add a processing unit application (a component of the executable application that hosts application processes). | Requires an active application. |
 
+An executable application has one or more processing unit applications (PUA).
+Each processing unit application is executed on one processing unit (PU) and
+hosts one or more application processes (AP).
+
 ## Typical Workflow
 
 1. Create or open a project.
