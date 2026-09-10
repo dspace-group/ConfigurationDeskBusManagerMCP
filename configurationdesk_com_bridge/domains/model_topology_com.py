@@ -356,11 +356,12 @@ def create_application_process(
     connection,
     name: Optional[str] = None,
     bus_config_names: Optional[list[str]] = None,
+    provide_default_task: bool = True,
 ) -> dict[str, Any]:
-    """Create an application process that provides a default task.
+    """Create an application process, optionally providing a default task.
 
-    Mirrors the ConfigurationDesk UI command
-    *New → Application Process (Providing Default Task)*:
+    With ``provide_default_task=True`` this mirrors the ConfigurationDesk UI
+    command *New → Application Process (Providing Default Task)*:
 
       1. Create an ``ApplicationProcess`` on the ``ProcessingUnitApplication``
          of the active executable application via the
@@ -373,17 +374,26 @@ def create_application_process(
          configurations (sets ``ManuallyAssignedApplicationProcess`` on each
          target bus configuration).
 
-    This is the canonical way to set up scheduling when working *without* a
-    behavior model (e.g. pure restbus simulation that is only accessed from
-    experiment software). Use :func:`create_preconfigured_application_process`
-    instead when an application process should be created for a specific
-    behavior model.
+    With ``provide_default_task=False`` step 2 is skipped, which mirrors the
+    plain *New → Application Process* command: the process is created without
+    a task, so a task must be created manually or supplied by an assigned
+    model implementation.
+
+    A process providing a default task is the canonical way to set up
+    scheduling when working *without* a behavior model (e.g. pure restbus
+    simulation that is only accessed from experiment software). Use
+    :func:`create_preconfigured_application_process` instead when an
+    application process should be created for a specific behavior model.
 
     Parameters
     ----------
     name
         Optional human-readable name for the new application process. When
         omitted, the ConfigurationDesk default name is kept.
+    provide_default_task
+        ``True`` (default) → set ``ProvideDefaultTask`` so ConfigurationDesk
+        creates the periodic default task. ``False`` → create a bare
+        application process without touching the property.
     bus_config_names
         Controls bus configuration assignment of the new application process:
 
@@ -429,7 +439,10 @@ def create_application_process(
     # 3) Turn it into an "Application Process providing default task" by
     # toggling the dedicated property. ConfigurationDesk creates the
     # periodic task + runnable function automatically.
-    default_task_set, default_task_property = _set_provide_default_task(process)
+    if provide_default_task:
+        default_task_set, default_task_property = _set_provide_default_task(process)
+    else:
+        default_task_set, default_task_property = False, ""
 
     # Wait until the new process becomes observable.
     verified, processes_after = wait_for_state(
@@ -452,6 +465,7 @@ def create_application_process(
 
     result: dict[str, Any] = {
         "process_name": process_name,
+        "provide_default_task": provide_default_task,
         "default_task_set": default_task_set,
         "default_task_property": default_task_property,
         "default_task_name": default_task_name,
