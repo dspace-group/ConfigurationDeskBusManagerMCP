@@ -386,7 +386,7 @@ Call `get_build_result` to retrieve the build output directory (contains the .rt
 
 @mcp.prompt(
     name="register_hardware",
-    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform or import an .htfx file for a real-time application. Registering a physical platform is NOT required when the only deliverable is a bus simulation container (BSC)",
+    description="Single task: provide the hardware topology — register and scan a SCALEXIO/MicroAutoBox III/MicroLabBox II platform or import an .htfx file for a real-time application. A non-empty hardware topology is NOT necessary to generate bus simulation containers (BSC)",
 )
 def register_hardware(
     platform_type: str = "SCALEXIO",
@@ -396,29 +396,29 @@ def register_hardware(
 # Register Hardware
 
 Goal: provide the hardware topology that bus and I/O function blocks are assigned to.
-NOTE: registering a physical platform is only required to build/download a
-real-time application. If the deliverable is a bus simulation container (BSC),
-no hardware platform is needed at all — a ProcessingUnitApplication is the only
-prerequisite (see Option C).
+NOTE: a hardware topology is required to build and download a real-time application
+for SCALEXIO, MicroAutoBox III, or MicroLabBox II. It describes the components of a
+specific hardware system, such as channel types and slot numbers.
+
+GENERAL REMARK: a non-empty hardware topology — created for example by registering
+and scanning hardware — is NOT necessary to generate bus simulation containers (BSC).
+When BSC output is the only deliverable, skip this prompt entirely and use
+`generate_bus_containers`. Working without a hardware topology means bus
+configurations are not assigned to application processes via real-time hardware
+access, so assign them manually instead.
 
 {_ENSURE_RUNNING}
 
 ## Choose an approach (ASK the user which applies)
 
-### Option A — Physical platform
+### Option A — Register and scan a physical platform
 Call `add_hardware_platform` with ip_addresses=["{platform_ip}"], platform_type="{platform_type}".
 Valid types: "SCALEXIO", "MicroAutoBox III", "MicroLabBox II".
-Returns the unique platform name used by later hardware operations.
+Returns the unique platform name used by later hardware operations. Scanning the
+registered platform creates a matching hardware topology.
 
 ### Option B — Import a topology file
 Call `import_hardware_topology` with path="C:/HW/topology.htfx".
-
-### Option C — VEOS / BSC-only / no hardware
-Call `add_processing_unit_application` (if none exists yet — it is mandatory
-regardless of target). VEOS is not a real-time hardware platform — do NOT call
-`add_hardware_platform` for it. No platform registration of any kind is needed
-when the only deliverable is a bus simulation container (BSC); generate it with
-`generate_bus_containers`.
 
 ## Verify / maintain
 - `list_platforms` — confirm the registered hardware and its I/O boards.
