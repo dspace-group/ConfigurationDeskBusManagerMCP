@@ -257,8 +257,8 @@ Goal: provide execution scheduling — mirrors the UI command
 {_ENSURE_RUNNING}
 
 ## Prerequisite
-A ProcessingUnitApplication must exist: register a hardware platform
-(`add_hardware_platform`) or, for VEOS/no-hardware, call `add_processing_unit_application`.
+A ProcessingUnitApplication is mandatory regardless of the target (real-time
+hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
 
 ## Step 1 — Create the process (default periodic task)
 Call `create_application_process` with name="{process_name}". This sets
@@ -386,7 +386,7 @@ Call `get_build_result` to retrieve the build output directory (contains the .rt
 
 @mcp.prompt(
     name="register_hardware",
-    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform, import an .htfx file, or add a processing unit application for VEOS",
+    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform or import an .htfx file for a real-time application. Registering a physical platform is NOT required when the only deliverable is a bus simulation container (BSC)",
 )
 def register_hardware(
     platform_type: str = "SCALEXIO",
@@ -396,6 +396,10 @@ def register_hardware(
 # Register Hardware
 
 Goal: provide the hardware topology that bus and I/O function blocks are assigned to.
+NOTE: registering a physical platform is only required to build/download a
+real-time application. If the deliverable is a bus simulation container (BSC),
+no hardware platform is needed at all — a ProcessingUnitApplication is the only
+prerequisite (see Option C).
 
 {_ENSURE_RUNNING}
 
@@ -409,10 +413,12 @@ Returns the unique platform name used by later hardware operations.
 ### Option B — Import a topology file
 Call `import_hardware_topology` with path="C:/HW/topology.htfx".
 
-### Option C — VEOS / no hardware
-Call `add_processing_unit_application`. VEOS is not a real-time hardware
-platform — do NOT call
-`add_hardware_platform` for it. The deliverable is the generated BSC.
+### Option C — VEOS / BSC-only / no hardware
+Call `add_processing_unit_application` (if none exists yet — it is mandatory
+regardless of target). VEOS is not a real-time hardware platform — do NOT call
+`add_hardware_platform` for it. No platform registration of any kind is needed
+when the only deliverable is a bus simulation container (BSC); generate it with
+`generate_bus_containers`.
 
 ## Verify / maintain
 - `list_platforms` — confirm the registered hardware and its I/O boards.
