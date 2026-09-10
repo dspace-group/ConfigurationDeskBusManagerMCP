@@ -258,8 +258,8 @@ Goal: provide execution scheduling — mirrors the UI command
 {_ENSURE_RUNNING}
 
 ## Prerequisite
-A ProcessingUnitApplication must exist: register a hardware platform
-(`add_hardware_platform`) or, for VEOS/no-hardware, call `add_application_processing_unit`.
+A ProcessingUnitApplication is mandatory regardless of the target (real-time
+hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
 
 ## Step 1 — Create the process (default periodic task)
 Call `create_application_process` with name="{process_name}". This sets
@@ -387,7 +387,7 @@ Call `get_build_result` to retrieve the build output directory (contains the .rt
 
 @mcp.prompt(
     name="register_hardware",
-    description="Single task: provide the hardware topology — register a SCALEXIO/MicroAutoBox III/MicroLabBox II platform, import an .htfx file, or add a VEOS processing unit",
+    description="Single task: provide the hardware topology — register and scan a SCALEXIO/MicroAutoBox III/MicroLabBox II platform or import an .htfx file for a real-time application. A non-empty hardware topology is NOT necessary to generate bus simulation containers (BSC)",
 )
 def register_hardware(
     platform_type: str = "SCALEXIO",
@@ -397,22 +397,29 @@ def register_hardware(
 # Register Hardware
 
 Goal: provide the hardware topology that bus and I/O function blocks are assigned to.
+NOTE: a hardware topology is required to build and download a real-time application
+for SCALEXIO, MicroAutoBox III, or MicroLabBox II. It describes the components of a
+specific hardware system, such as channel types and slot numbers.
+
+GENERAL REMARK: a non-empty hardware topology — created for example by registering
+and scanning hardware — is NOT necessary to generate bus simulation containers (BSC).
+When BSC output is the only deliverable, skip this prompt entirely and use
+`generate_bus_containers`. Working without a hardware topology means bus
+configurations are not assigned to application processes via real-time hardware
+access, so assign them manually instead.
 
 {_ENSURE_RUNNING}
 
 ## Choose an approach (ASK the user which applies)
 
-### Option A — Physical platform
+### Option A — Register and scan a physical platform
 Call `add_hardware_platform` with ip_addresses=["{platform_ip}"], platform_type="{platform_type}".
 Valid types: "SCALEXIO", "MicroAutoBox III", "MicroLabBox II".
-Returns the unique platform name used by later hardware operations.
+Returns the unique platform name used by later hardware operations. Scanning the
+registered platform creates a matching hardware topology.
 
 ### Option B — Import a topology file
 Call `import_hardware_topology` with path="C:/HW/topology.htfx".
-
-### Option C — VEOS / no hardware
-Call `add_application_processing_unit`. VEOS is NOT a platform — do NOT call
-`add_hardware_platform` for it. The deliverable is the generated BSC.
 
 ## Verify / maintain
 - `list_platforms` — confirm the registered hardware and its I/O boards.
@@ -478,7 +485,7 @@ This is the CAN/LIN/Ethernet path — for analog/digital I/O use the `add_io_fun
 ## Prerequisite
 - A bus configuration with assigned ECUs (see `create_bus_configuration`).
 - Hardware present: `add_hardware_platform` / `import_hardware_topology`, or
-  `add_application_processing_unit` for VEOS (then skip channel assignment).
+  `add_processing_unit_application` for VEOS (then skip channel assignment).
 
 ## Step 1 — Inspect what needs hardware
 Call `list_bus_access_requests` — each cluster/part generates one request to assign.
@@ -572,7 +579,7 @@ at any time to understand the current state.
 Call `get_application_status` — project name, project root, and active application.
 
 ## Configuration tree
-Call `list_configuration` — executable applications, processing units, tasks, events.
+Call `list_configuration` — executable applications, processing unit applications, application processes, tasks, events.
 
 ## Inventory
 - `list_applications` — applications in the project.

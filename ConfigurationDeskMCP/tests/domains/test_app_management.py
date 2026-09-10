@@ -10,6 +10,7 @@ COVERS = (
     "activate_application",
     "remove_application",
     "list_applications",
+    "add_processing_unit_application",
 )
 
 
@@ -28,3 +29,7 @@ def test_remove_application(fake_bridge):
 
 def test_list_applications(fake_bridge):
     run_ok(appmgmt_svc.list_applications())
+
+
+def test_add_processing_unit_application(fake_bridge):
+    run_ok(appmgmt_svc.add_processing_unit_application())

@@ -112,7 +112,7 @@ async def analyze_models() -> str:
         "Pass `bus_config_names` to scope the assignment to specific configurations, or pass an "
         "empty list `[]` to skip assignment entirely. "
         "PRECONDITION: a ProcessingUnitApplication must exist (register a hardware platform or call "
-        "`add_application_processing_unit` for VEOS workflows)."
+        "`add_processing_unit_application` for VEOS workflows)."
     ),
     annotations={
         "readOnlyHint": False,

@@ -13,6 +13,11 @@ for project-scoped model, matrix, bus, hardware, and build work.
 | `activate_application` | Make an existing application active. | Safe when the named application is already active. |
 | `remove_application` | Remove an application from the project. | Destructive; inspect current state first. |
 | `list_applications` | List applications and their active status. | Read-only. |
+| `add_processing_unit_application` | Add a processing unit application (a component of the executable application that hosts application processes). | Requires an active application. |
+
+An executable application has one or more processing unit applications (PUA).
+Each processing unit application is executed on one processing unit (PU) and
+hosts one or more application processes (AP).
 
 ## Typical Workflow
 

@@ -1,8 +1,8 @@
 # Hardware Management Tools
 
-**Domain:** Physical hardware platforms, imported topologies, and no-hardware workflows
+**Domain:** Physical hardware platforms and imported topologies
 
-Use this domain to create the topology required by hardware-facing I/O blocks. Choose a physical platform, an imported `.htfx` topology, or a no-hardware path before assigning channels.
+Use this domain to create the topology required by hardware-facing I/O blocks. Choose a physical platform or an imported `.htfx` topology before assigning channels. For a no-hardware or VEOS build, add a processing unit application via [Application Management](app-management-mcp-tools.md) instead.
 
 ## Tool Contract
 
@@ -15,7 +15,6 @@ Use this domain to create the topology required by hardware-facing I/O blocks. C
 | `list_platforms` | List registered platforms. | Read-only. |
 | `refresh_platforms` | Refresh platform information. | May contact physical hardware. |
 | `add_hardware_element` | Add a generic hardware element to a platform. | Use the runtime schema for supported element values. |
-| `add_application_processing_unit` | Add processing support for VEOS or no-hardware workflows. | Do not use a physical-platform tool for this path. |
 
 ## Supported Platform Types
 
@@ -25,7 +24,7 @@ Use this domain to create the topology required by hardware-facing I/O blocks. C
 
 1. **Physical hardware:** Call `add_hardware_platform`, then use its returned platform name for later scan or assignment operations.
 2. **Existing topology file:** Call `import_hardware_topology` with an `.htfx`path.
-3. **VEOS or no physical hardware:** Call `add_application_processing_unit`.
+3. **VEOS or no physical hardware:** Add a processing unit application — see [Application Management](app-management-mcp-tools.md).
 
 After physical hardware is available, use the Bus Access tools to assign bus I/O function blocks and channel sets.
 

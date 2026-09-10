@@ -36,7 +36,7 @@ authoritative.
   hardware I/O value with `set_io_function_block_property`.
 - Use `add_hardware_platform` only for physical SCALEXIO, MicroAutoBox III, or
   MicroLabBox II hardware with an address. Use `import_hardware_topology` for
-  an `.htfx` file. Use `add_application_processing_unit` for VEOS or a
+  an `.htfx` file. Use `add_processing_unit_application` for VEOS or a
   no-hardware workflow.
 - Use `add_model_to_signal_chain` for every port of one model and
   `add_model_port_to_signal_chain` only for a named port. Use
@@ -60,8 +60,8 @@ authoritative.
 - Use `list_bus_configurations` for top-level configuration names. Use
   `find_bus_config_elements` to inspect elements or exposed ports inside a
   selected configuration.
-- Use `list_configuration` to inspect processing units, application processes,
-  tasks, and events before changing them.
+- Use `list_configuration` to inspect processing unit applications, application
+  processes, tasks, and events before changing them.
 - Use `analyze_models` to discover model interfaces and ports. Use
   `check_conflicts` to validate the configured application before a build or
   hardware download; neither tool substitutes for the other.

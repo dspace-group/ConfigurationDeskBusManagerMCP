@@ -87,7 +87,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `list_platforms` | Hardware management | Prompt: `register_hardware` | List registered physical platforms before choosing one to rescan, modify, or remove. |
 | `refresh_platforms` | Hardware management | Prompt: `register_hardware` | Refresh information for registered platforms when their current status must be checked. |
 | `add_hardware_element` | Hardware management | [Hardware Management](../tools/hardware-management-mcp-tools.md) | Add the supported hardware element `DS6311` to the active hardware topology only when the required element type is known. |
-| `add_application_processing_unit` | Hardware management | Prompt: `register_hardware` | For a VEOS or no-hardware workflow, add an application processing unit; do not register a physical platform. |
+| `add_processing_unit_application` | Application management | [Application Management](../tools/app-management-mcp-tools.md) | For a VEOS or no-hardware workflow, add a processing unit application; do not register a physical platform. |
 | `create_io_function_block` | Bus access | Prompt: `assign_bus_hardware` | After creating `CAN_Restbus`, create physical CAN I/O function block `CAN_Body` for one bus channel. |
 | `set_io_function_block_property` | Bus access | Prompt: `assign_bus_hardware` | Set hardware I/O property `BaudRate=500000` on CAN function block `CAN_Body`; do not use a bus-feature property tool. |
 | `list_io_function_block_properties` | Bus access | Prompt: `assign_bus_hardware` | List the supported properties and current values of `CAN_Body` before setting an uncertain hardware I/O value. |
