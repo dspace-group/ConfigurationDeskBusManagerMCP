@@ -354,8 +354,11 @@ async def remove_bus_config_elements(
     name="generate_bus_containers",
     description=(
         "Generate Bus Simulation Containers (BSC) from the bus configurations. "
-        "BSCs are compiled artifacts for explicit VEOS/BSC delivery or other user-requested "
-        "container output. "
+        "A BSC packages the configured bus communication and has two consumers: "
+        "VEOS, to implement it in an offline simulation application for SIL simulation; and "
+        "ConfigurationDesk, to implement it in a real-time application for SCALEXIO, "
+        "MicroAutoBox III, or MicroLabBox II (add the .bsc via `add_model`). "
+        "BSC output is therefore NOT VEOS-only and does not rule out a real-time build. "
         "Do NOT call this just to inspect, list, or set function-port properties — "
         "assigned features already expose those ports for find_bus_config_elements and "
         "set_function_port_property. Do NOT use this as recovery for a failed "

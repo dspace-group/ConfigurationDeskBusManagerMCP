@@ -225,7 +225,8 @@ Call `add_model` with path="{model_path}".
 - .fmu — Functional Mock-up Unit (FMU)
 - .slx / .mdl — Simulink model (model analysis required).
 - .sic — Simulink implementation container.
-- .bsc — Bus Simulation Container.
+- .bsc — Bus Simulation Container. Carries bus communication; adding it
+  implements that communication in a real-time application.
 - .fmu — Functional Mock-up Unit (FMI-based model implementation).
 
 ## Step 2 — Analyze (Simulink model only)

@@ -18,7 +18,7 @@ behavior.
 | `assign_ecu_to_bus_config` | Assign whole ECUs for a selected part. | Use for whole-ECU restbus scope. |
 | `add_feature_to_bus_element` | Add an access or behavior feature to selected elements. | Features can expose function ports. |
 | `remove_bus_config_elements` | Remove assigned elements by name, type, or XPath. | Destructive. |
-| `generate_bus_containers` | Generate BSC output. | Call only for explicit container or BSC delivery. |
+| `generate_bus_containers` | Generate BSC output. | Call only for explicit container or BSC delivery. Consumers: VEOS and ConfigurationDesk real-time applications. |
 | `find_bus_config_elements` | Find elements and exposed ports by name, type, or XPath. | Read-only; paginated. |
 | `assign_bus_config_to_application_process` | Associate a bus configuration with an application process. | Requires an application process. |
 | `set_function_port_property` | Change function-port properties. | Use the precise port XPath when scope is ambiguous. |
