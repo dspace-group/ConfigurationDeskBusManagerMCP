@@ -97,7 +97,7 @@ prerequisites.
 8. `add_feature_to_bus_element` → add signal/PDU/controller features
 8b. `set_bus_config_element_property` → set feature-node or bus-element properties like countdown, overwrite, offset, or frame-length values
 8c. `set_matrix_element_property` → set communication-matrix element properties like PDU/signal Length or Initial value
-9. `add_model` → load behavior model (.slx/.sic/.bsc)
+9. `add_model` → load behavior model (.slx/.mdl/.sic/.bsc/.fmu)
 10. `create_application_process` → set up execution scheduling
 11. `auto_connect_matching_io_function_blocks_to_model_ports` → wire bus ports to model
 12. `generate_bus_containers` → OPTIONAL: generate BSC/container output only when the user explicitly asks for it

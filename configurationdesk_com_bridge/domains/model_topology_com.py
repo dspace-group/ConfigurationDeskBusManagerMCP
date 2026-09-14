@@ -51,7 +51,7 @@ def replace_model(
     if model_name:
         mt.Configure("ReplaceModel", [abs_path, analyze, "", model_name])
     else:
-        if abs_path.endswith((".sic", ".bsc")):
+        if abs_path.endswith((".sic", ".bsc", ".fmu")):
             mt.Configure("Replace", [6, "ModelTopology", abs_path, False])
         else:
             mt.Configure("Replace", [abs_path, analyze, ""])

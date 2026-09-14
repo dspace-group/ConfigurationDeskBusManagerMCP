@@ -31,7 +31,7 @@ ConfigurationDesk provides a COM-based automation API for HIL (Hardware-in-the-L
 2. **Set Project Root** — Use `set_project_root` to configure where projects are stored
 3. **Create/Open Project** — Use `create_project` or `open_project`
 4. **Add Application** — Use `add_application` within the project
-5. **Add Model** — Use `add_model` to import Simulink (.slx/.mdl), SIC, or BSC files
+5. **Add Model** — Use `add_model` to import Simulink (.slx/.mdl), SIC, BSC, or FMU files
 6. **Analyze Models** — Use `analyze_models` to detect ports and interfaces
 7. **Add Communication Matrix** — Use `add_communication_matrix` for ARXML/DBC/LDF files
 8. **Configure Bus** — Use `create_bus_configuration` and `assign_matrix_to_bus_config`
@@ -620,6 +620,10 @@ names see `configurationdesk://reference/xpath`.
 - `.slx` / `.mdl` — Simulink (require `analyze_models`).
 - `.sic` — Simulink implementation container (pre-analyzed).
 - `.bsc` — Bus Simulation Container.
+- `.fmu` — Functional Mock-up Unit (pre-analyzed).
+
+`generate_bus_containers` supports only SIC model implementations; FMU and
+Simulink models cannot be used to generate BSC files.
 
 ## Communication matrix file extensions (add_communication_matrix)
 - `.arxml` (AUTOSAR), `.dbc` (CAN), `.ldf` (LIN).

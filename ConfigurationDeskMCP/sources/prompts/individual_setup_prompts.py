@@ -206,7 +206,7 @@ The full feature catalog is in the `configurationdesk://reference/features` reso
 
 @mcp.prompt(
     name="add_behavior_model",
-    description="Single task: add a behavior model (.slx/.mdl/.sic/.bsc), analyze it, and expose its ports in the signal chain",
+    description="Single task: add a behavior model (.slx/.mdl/.sic/.bsc/.fmu), analyze it, and expose its ports in the signal chain",
 )
 def add_behavior_model(
     model_path: str = "D:/Models/plant_model.slx",
@@ -225,10 +225,11 @@ Call `add_model` with path="{model_path}".
 - .slx / .mdl — Simulink (analysis required).
 - .sic — Simulink implementation container (pre-compiled, ports already defined).
 - .bsc — Bus Simulation Container.
+- .fmu — Functional Mock-up Unit (FMI-based model implementation).
 
 ## Step 2 — Analyze (Simulink only)
 Call `analyze_models` to detect input/output ports and create model port blocks.
-Skip for .sic/.bsc (already analyzed).
+Skip for .sic/.bsc/.fmu (already analyzed).
 
 ## Step 3 — Inspect
 - `list_models` — confirm the model and its analysis state.
