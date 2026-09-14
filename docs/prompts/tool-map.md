@@ -66,8 +66,8 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `add_model` | Model topology | Prompt: `add_behavior_model` | Add `D:/Models/plant_model.slx` and analyze it so its ports can be configured for connection. |
 | `replace_model` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | Replace only model `plant_model` with `D:/Models/plant_v2.slx`, then review affected ports and connections. |
 | `remove_model` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | Check connections, then remove only model `obsolete_model`; do not remove other configured models. |
-| `analyze_models` | Model topology | Prompt: `add_behavior_model` | Analyze loaded Simulink models before exposing or connecting their ports; skip this for already analyzed SIC or BSC files. |
-| `create_application_process` | Model topology | Prompt: `create_application_process` | For the VEOS/no-hardware application, create periodic process `RestbusProcess` and assign only `CAN_Restbus` to it. |
+| `analyze_models` | Model topology | Prompt: `add_behavior_model` | Analyze loaded Simulink models before exposing or connecting their ports; skip this for already analyzed SIC, BSC, or FMU files. |
+| `create_application_process` | Model topology | Prompt: `create_application_process` | For the VEOS/no-hardware application, create process `RestbusProcess` with a default task and assign only `CAN_Restbus` to it. |
 | `list_models` | Model topology | Prompt: `add_behavior_model` | List loaded models and their file paths before selecting one for a process, port exposure, replacement, or removal. |
 | `add_model_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | Expose every port of model `plant_model` in the signal chain; use this only when all of its ports are intended. |
 | `add_model_port_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | List ports for `plant_model`, then expose only its named port `EngineSpeed` in the signal chain. |
@@ -87,7 +87,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `list_platforms` | Hardware management | Prompt: `register_hardware` | List registered physical platforms before choosing one to rescan, modify, or remove. |
 | `refresh_platforms` | Hardware management | Prompt: `register_hardware` | Refresh information for registered platforms when their current status must be checked. |
 | `add_hardware_element` | Hardware management | [Hardware Management](../tools/hardware-management-mcp-tools.md) | Add the supported hardware element `DS6311` to the active hardware topology only when the required element type is known. |
-| `add_application_processing_unit` | Hardware management | Prompt: `register_hardware` | For a VEOS or no-hardware workflow, add an application processing unit; do not register a physical platform. |
+| `add_processing_unit_application` | Application management | [Application Management](../tools/app-management-mcp-tools.md) | For a VEOS or no-hardware workflow, add a processing unit application; do not register a physical platform. |
 | `create_io_function_block` | Bus access | Prompt: `assign_bus_hardware` | After creating `CAN_Restbus`, create physical CAN I/O function block `CAN_Body` for one bus channel. |
 | `set_io_function_block_property` | Bus access | Prompt: `assign_bus_hardware` | Set hardware I/O property `BaudRate=500000` on CAN function block `CAN_Body`; do not use a bus-feature property tool. |
 | `list_io_function_block_properties` | Bus access | Prompt: `assign_bus_hardware` | List the supported properties and current values of `CAN_Body` before setting an uncertain hardware I/O value. |

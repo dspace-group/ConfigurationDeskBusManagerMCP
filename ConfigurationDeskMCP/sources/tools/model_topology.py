@@ -22,8 +22,9 @@ from sources.services import model_topology_service as svc
     name="add_model",
     description=(
         "Add a behavior model file to the project's model topology. "
-        "SUPPORTED FORMATS: .slx/.mdl (Simulink), .sic (Simulink implementation container), .bsc (Bus Simulation Container). "
-        "For .sic/.bsc files, analysis is skipped since ports are already defined. "
+        "SUPPORTED FORMATS: .slx/.mdl (Simulink), .sic (Simulink implementation container), .bsc (Bus Simulation Container), "
+        ".fmu (Functional Mock-up Unit). "
+        "For .sic/.bsc/.fmu files, analysis is skipped since ports are already defined. "
         "For Simulink models, set analyze=true (default) to detect model ports. "
         "WORKFLOW: add_model → analyze_models → create_application_process → "
         "auto_connect_matching_io_function_blocks_to_model_ports. "
@@ -80,7 +81,7 @@ async def remove_model(input: RemoveModelInput) -> str:
         "Analyze all Simulink models in the project to detect their input/output ports and interfaces. "
         "Creates model port blocks in the signal chain that can be connected to bus function ports. "
         "Call after add_model and before auto_connect_matching_io_function_blocks_to_model_ports. "
-        "Not needed for .sic/.bsc files (already analyzed). May take time for large models."
+        "Not needed for .sic/.bsc/.fmu files (already analyzed). May take time for large models."
     ),
     annotations={
         # Not read-only: analysis creates model port blocks in the signal chain.
@@ -112,7 +113,7 @@ async def analyze_models() -> str:
         "Pass `bus_config_names` to scope the assignment to specific configurations, or pass an "
         "empty list `[]` to skip assignment entirely. "
         "PRECONDITION: a ProcessingUnitApplication must exist (register a hardware platform or call "
-        "`add_application_processing_unit` for VEOS workflows)."
+        "`add_processing_unit_application` for VEOS workflows)."
     ),
     annotations={
         "readOnlyHint": False,

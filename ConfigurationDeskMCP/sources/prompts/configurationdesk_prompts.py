@@ -70,10 +70,21 @@ Call `add_model` with path="{model_path}".
 For .slx/.mdl also call `analyze_models`; .sic/.bsc are already analyzed.
 Then `add_model_to_signal_chain` to expose the model ports.
 
-## Step 6 — Provide scheduling
-A processing unit must exist. For real hardware, register it with
-`add_hardware_platform`; for VEOS/offline, call `add_application_processing_unit`.
-Then `create_application_process` (auto-assigned to "{bus_config_name}").
+## Step 6 — Create the application process and assign the model
+When creating an application process, a Processing Unit Application should be 
+automatically created if one does not already exist. If exactly one Processing Unit 
+Application exists, the Application Process should be added to it.
+
+Assign the behavior model from Step 5 by calling
+`create_preconfigured_application_process` with the model's name (use `list_models` to
+get the exact name of "{model_path}"). This creates an application process pre-configured
+for that model — its runnable function is placed in the process's default task.
+
+Then assign the bus configuration to that application process with
+`assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
+
+For a model-less restbus process instead, call `create_application_process` — it
+auto-assigns to "{bus_config_name}".
 
 ## Step 7 — Connect the ports
 Call `auto_connect_matching_io_function_blocks_to_model_ports` to wire matching

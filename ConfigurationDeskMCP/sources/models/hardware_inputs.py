@@ -8,11 +8,11 @@ from pydantic import BaseModel, Field
 
 class AddHardwarePlatformInput(BaseModel):
     ip_addresses: List[str] = Field(
-        description="Address(es) of the platform to register, e.g. ['192.0.2.10']. VEOS is NOT a platform - do not use this for VEOS."
+        description="Address(es) of the platform to register, e.g. ['192.0.2.10']. VEOS is not a real-time hardware platform - do not use this for VEOS."
     )
     platform_type: str = Field(
         default="SCALEXIO",
-        description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is NOT a platform - use add_application_processing_unit / generate_bus_containers instead.",
+        description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is not a real-time hardware platform - use add_processing_unit_application / generate_bus_containers instead.",
     )
 
 

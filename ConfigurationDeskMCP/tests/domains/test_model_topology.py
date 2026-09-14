@@ -98,12 +98,12 @@ def test_resolve_processing_unit_application_recovers_when_hardware_exists():
                 return _FakeCollection([processing_unit])
             return _FakeCollection([])
 
-    pu_application, detail = model_topology_com._resolve_processing_unit_application(
+    pua, detail = model_topology_com._resolve_processing_unit_application(
         SimpleNamespace(),
         _FakeRelation(),
     )
 
-    assert pu_application is processing_unit
+    assert pua is processing_unit
     assert detail == ""
 
 
@@ -117,12 +117,12 @@ def test_resolve_processing_unit_application_still_fails_without_processing_unit
         def GetElements(self, _parent):
             return _FakeCollection([])
 
-    pu_application, detail = model_topology_com._resolve_processing_unit_application(
+    pua, detail = model_topology_com._resolve_processing_unit_application(
         SimpleNamespace(),
         _FakeRelation(),
     )
 
-    assert pu_application is None
+    assert pua is None
     assert (
         "No ProcessingUnitApplication is available under the active executable application"
         in detail

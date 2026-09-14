@@ -97,15 +97,15 @@ prerequisites.
 8. `add_feature_to_bus_element` → add signal/PDU/controller features
 8b. `set_bus_config_element_property` → set feature-node or bus-element properties like countdown, overwrite, offset, or frame-length values
 8c. `set_matrix_element_property` → set communication-matrix element properties like PDU/signal Length or Initial value
-9. `add_model` → load behavior model (.slx/.sic/.bsc)
+9. `add_model` → load behavior model (.slx/.mdl/.sic/.bsc/.fmu)
 10. `create_application_process` → set up execution scheduling
 11. `auto_connect_matching_io_function_blocks_to_model_ports` → wire bus ports to model
 12. `generate_bus_containers` → OPTIONAL: generate BSC/container output only when the user explicitly asks for it
 13. Hardware topology → ASK USER which approach:
     - `add_hardware_platform` → register SCALEXIO, MicroAutoBox III, or MicroLabBox II hardware (needs address from user)
     - `import_hardware_topology` → import .htfx file (needs file path from user)
-    - `add_application_processing_unit` → no physical hardware / VEOS workflow
-    - VEOS does NOT need platform registration. Use generate_bus_containers for BSC files.
+    - `add_processing_unit_application` → no physical hardware / VEOS workflow
+    - VEOS is not a real-time hardware platform; use generate_bus_containers to produce the BSC files it consumes.
 14. `create_io_function_block` → create CAN/LIN/Ethernet I/O block
 15. `set_io_function_block_property` → set BaudRate
 16. `assign_bus_access` → link bus access requests to function block
