@@ -272,7 +272,7 @@ async def auto_assign_channel_set(function_block_name: str, bus_type: str = "CAN
                         f"Function block '{function_block_name}' not found. "
                         f"Verify it exists with list_io_function_block_properties. "
                         f"If the block is LIN, pass bus_type='LIN'. "
-                        f"Also ensure a hardware topology exists (add_hardware_platform or import_hardware_topology), or add a processing unit application (add_processing_unit_application) for a no-hardware build."
+                        f"Also ensure a hardware topology exists (add_hardware_platform or import_hardware_topology)."
                     ),
                 )
             return error_response(detail, transient=False)
@@ -390,8 +390,7 @@ async def create_preconfigured_application_process(model_name: str) -> str:
                 next_action=(
                     "Pre-configured application process creation failed. "
                     "Verify the model exists in the topology and a ProcessingUnitApplication "
-                    "is available (registered hardware or `add_processing_unit_application`). "
-                    "Do NOT retry with the same parameters."
+                    "is available. Do NOT retry with the same parameters."
                 ),
             )
         if result.get("verified"):

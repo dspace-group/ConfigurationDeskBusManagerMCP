@@ -12,7 +12,7 @@ class AddHardwarePlatformInput(BaseModel):
     )
     platform_type: str = Field(
         default="SCALEXIO",
-        description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is not a real-time hardware platform - use add_processing_unit_application / generate_bus_containers instead.",
+        description="Platform type: 'SCALEXIO', 'MicroAutoBox III', or 'MicroLabBox II'. VEOS is not a real-time hardware platform.",
     )
 
 

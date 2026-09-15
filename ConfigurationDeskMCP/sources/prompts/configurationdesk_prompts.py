@@ -78,7 +78,8 @@ Application exists, the Application Process should be added to it.
 Assign the behavior model from Step 5 by calling
 `create_preconfigured_application_process` with the model's name (use `list_models` to
 get the exact name of "{model_path}"). This creates an application process pre-configured
-for that model — its runnable function is placed in the process's default task.
+for that model. Tasks that match the requirements of the model are created and/or 
+configured appropriately.
 
 Then assign the bus configuration to that application process with
 `assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").

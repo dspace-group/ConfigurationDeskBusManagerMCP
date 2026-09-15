@@ -88,8 +88,7 @@ async def add_processing_unit_application() -> str:
 
     An executable application has one or more processing unit applications (PUA);
     each PUA is executed on one processing unit (PU) and hosts one or more
-    application processes (AP). Add one explicitly when no registered hardware or
-    imported topology already provides one — typically a no-hardware or VEOS build.
+    application processes (AP).
     """
     try:
         conn = await _get_live_connection()

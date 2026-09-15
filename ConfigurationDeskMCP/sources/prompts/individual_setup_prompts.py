@@ -405,9 +405,7 @@ specific hardware system, such as channel types and slot numbers.
 GENERAL REMARK: a non-empty hardware topology — created for example by registering
 and scanning hardware — is NOT necessary to generate bus simulation containers (BSC).
 When BSC output is the only deliverable, skip this prompt entirely and use
-`generate_bus_containers`. Working without a hardware topology means bus
-configurations are not assigned to application processes via real-time hardware
-access, so assign them manually instead.
+`generate_bus_containers`. 
 
 {_ENSURE_RUNNING}
 
