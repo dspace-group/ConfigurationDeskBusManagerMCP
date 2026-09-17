@@ -34,14 +34,14 @@ configurationdesk-com-bridge = { workspace = true }
 dev = [
     "pip-audit>=2.10.1",
     "pip>=26.2.1",
-    "pyright>=1.1.411",
-    "ruff>=0.16.5",
+    "pyright>=1.1.414",
+    "ruff>=0.16.7",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
 ]
 build = [
-    "pyinstaller>=6.22.2,<7",
+    "pyinstaller>=6.22.3,<7",
 ]
 
 # Public PyPI is uv's default package index. Internal mirrors, if needed for a
