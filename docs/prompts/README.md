@@ -26,7 +26,7 @@ parameters requested by that host.
 | `add_feature_to_bus_element` | Add a signal, PDU, frame, or controller feature | Bus configuration |
 | `add_behavior_model` | Add, analyze, and expose a behavior model | Model topology |
 | `create_application_process` | Create scheduling for a workflow | Model topology, hardware |
-| `connect_model_ports` | Connect model ports and function ports | Model topology, bus access |
+| `connect_model_port_blocks` | Connect model port blocks and function ports | Model topology, bus access |
 | `check_and_resolve_conflicts` | Inspect and resolve configuration conflicts | Working views, bus access, hardware |
 | `build_application` | Run a conflict-checked build | Build management |
 | `register_hardware` | Choose physical, imported, or no-hardware topology | Hardware management |
@@ -42,7 +42,7 @@ schemas and annotations.
 ## Tool-to-Prompt Map
 
 For a compact entry point for every registered tool, see the
-[Tool-to-Prompt Map](tool-map.md). It lists all 77 tools exactly once with the
+[Tool-to-Prompt Map](tool-map.md). It lists all 78 tools exactly once with the
 closest prompt or domain guide and a short copy-and-adapt example request. The
 map is checked by the test suite so it stays aligned with the live MCP registry.
 
@@ -63,13 +63,13 @@ physical hardware.
 ### Model and Signal-Chain Setup
 
 ```text
-Add D:/Models/plant_model.slx, analyze it, expose all model ports, create an
-application process, and connect matching function ports. Stop if conflicts
+Add D:/Models/plant_model.slx, analyze it, expose all model port blocks, create
+an application process, and connect matching function ports. Stop if conflicts
 remain.
 ```
 
 Use `add_behavior_model`, `create_application_process`, and
-`connect_model_ports`.
+`connect_model_port_blocks`.
 
 ### Physical Bus Hardware Assignment
 

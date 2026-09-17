@@ -1,6 +1,6 @@
 # ConfigurationDesk MCP Server
 
-This MCP server automates dSPACE ConfigurationDesk and Bus Manager via their COM automation interfaces. It provides project, application, hardware, bus-configuration, communication-matrix, and build automation through **77 tools**, 11 resources, and 15 prompts.
+This MCP server automates dSPACE ConfigurationDesk and Bus Manager via their COM automation interfaces. It provides project, application, hardware, bus-configuration, communication-matrix, and build automation through **78 tools**, 11 resources, and 15 prompts.
 
 ConfigurationDesk and Bus Manager are useful partners for AI-driven real-time application configuration: a AI agent can create and adapt a configuration, while the dSPACE tools provide the domain operations, COM automation, and build integration on a local Windows machine.
 
@@ -154,7 +154,7 @@ flowchart TB
     subgraph MCP["ConfigurationDeskMCP"]
         direction TB
         Server["FastMCP Server\nsources/server/app.py"]
-        Tools["Tools\n12 domains · 77 tools"]
+        Tools["Tools\n12 domains · 78 tools"]
         Resources["Resources\nautomation guides"]
         Prompts["Prompts\nworkflow templates"]
         Services["Services\n12 modules"]
@@ -244,7 +244,7 @@ CI runs the same checks on Windows across Python 3.11–3.13 ([.github/workflows
 | docs/extending.md | Add tools, domains, resources, prompts |
 | docs/tools/README.md | Per-domain tool reference + glossary |
 | docs/prompts/README.md | Prompt coverage and copy-and-adapt workflow requests |
-| docs/prompts/tool-map.md | All 77 tools mapped to a prompt or domain guide |
+| docs/prompts/tool-map.md | All 78 tools mapped to a prompt or domain guide |
 | docs/clients.md | Connect VS Code, Claude, custom clients |
 | docs/mcp-inspector.md | Test tools interactively in a browser |
 | docs/windows-executable.md | Download and verify the Windows executable |

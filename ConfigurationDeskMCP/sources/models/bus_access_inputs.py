@@ -79,7 +79,7 @@ class AssignHardwareAutomaticallyInput(BaseModel):
     pass
 
 
-class ConnectIoFunctionBlocksToModelPortsInput(BaseModel):
+class AutoConnectIoBlocksToModelPortBlocksInput(BaseModel):
     pass
 
 

@@ -81,7 +81,7 @@ async def connect_function_block_port_to_model_port(
     function_block_name: str,
     function_block_port_name: str,
     model_name: str,
-    model_port_name: str,
+    model_port_block_name: str,
 ) -> str:
     try:
         conn = get_connection()
@@ -91,7 +91,7 @@ async def connect_function_block_port_to_model_port(
             function_block_name,
             function_block_port_name,
             model_name,
-            model_port_name,
+            model_port_block_name,
         )
         if result.get("error"):
             detail = result["detail"]
@@ -112,8 +112,8 @@ async def connect_function_block_port_to_model_port(
                     detail,
                     transient=False,
                     next_action=(
-                        "Call `list_model_ports` with the given model_name to "
-                        "discover valid model port names."
+                        "Call `list_model_port_blocks` with the given model_name to "
+                        "discover valid model port block names."
                     ),
                 )
             if "model '" in low and "not found" in low:
@@ -126,7 +126,7 @@ async def connect_function_block_port_to_model_port(
 
         message = (
             f"Connected '{function_block_name}.{function_block_port_name}' "
-            f"to '{model_name}.{model_port_name}'"
+            f"to '{model_name}.{model_port_block_name}'"
         )
         if result.get("verified"):
             return success_response(
@@ -135,14 +135,14 @@ async def connect_function_block_port_to_model_port(
                 function_block_name=function_block_name,
                 function_block_port_name=function_block_port_name,
                 model_name=model_name,
-                model_port_name=model_port_name,
+                model_port_block_name=model_port_block_name,
             )
         return unverified_response(
             message=message + " (issued but could not verify Links)",
             function_block_name=function_block_name,
             function_block_port_name=function_block_port_name,
             model_name=model_name,
-            model_port_name=model_port_name,
+            model_port_block_name=model_port_block_name,
         )
     except BridgeError as exc:
         return tool_error_result(exc)

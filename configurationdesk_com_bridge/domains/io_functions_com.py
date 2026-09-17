@@ -251,9 +251,9 @@ def connect_function_block_port_to_model_port(
     function_block_name: str,
     function_block_port_name: str,
     model_name: str,
-    model_port_name: str,
+    model_port_block_name: str,
 ) -> dict[str, Any]:
-    """Connect a single function block port to a single model port.
+    """Connect a single function block port to a single model port block.
 
     Mirrors the sample::
 
@@ -314,11 +314,13 @@ def connect_function_block_port_to_model_port(
             ),
         }
 
-    model_port_block = _find_child_by_name(model_block, model_port_name)
+    model_port_block = _find_child_by_name(model_block, model_port_block_name)
     if model_port_block is None:
         return {
             "error": True,
-            "detail": (f"Model port block '{model_port_name}' not found on model '{model_name}'."),
+            "detail": (
+                f"Model port block '{model_port_block_name}' not found on model '{model_name}'."
+            ),
         }
 
     # The model port block exposes the actual connectable port at index 0
@@ -329,7 +331,8 @@ def connect_function_block_port_to_model_port(
         return {
             "error": True,
             "detail": (
-                f"Cannot access port on model port block '{model_name}.{model_port_name}': {e}"
+                f"Cannot access port on model port block "
+                f"'{model_name}.{model_port_block_name}': {e}"
             ),
         }
 
@@ -342,7 +345,7 @@ def connect_function_block_port_to_model_port(
             "detail": (
                 f"ConnectObjects failed for "
                 f"'{function_block_name}.{function_block_port_name}' -> "
-                f"'{model_name}.{model_port_name}': {e}"
+                f"'{model_name}.{model_port_block_name}': {e}"
             ),
         }
 
@@ -359,6 +362,6 @@ def connect_function_block_port_to_model_port(
         "function_block_name": function_block_name,
         "function_block_port_name": function_block_port_name,
         "model_name": model_name,
-        "model_port_name": model_port_name,
+        "model_port_block_name": model_port_block_name,
         "verified": verified,
     }

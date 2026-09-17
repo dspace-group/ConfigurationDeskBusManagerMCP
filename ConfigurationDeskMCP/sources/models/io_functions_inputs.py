@@ -42,9 +42,9 @@ class ConnectFunctionBlockPortToModelPortInput(BaseModel):
             "`add_model`."
         )
     )
-    model_port_name: str = Field(
+    model_port_block_name: str = Field(
         description=(
             "Name of the model port block on the model, e.g. 'Sine_t'. "
-            "Use `list_model_ports` to discover valid values."
+            "Use `list_model_port_blocks` to discover valid values."
         )
     )
