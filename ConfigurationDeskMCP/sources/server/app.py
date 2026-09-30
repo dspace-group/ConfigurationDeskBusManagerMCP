@@ -155,7 +155,7 @@ prerequisites.
 - **Function Port Property** = port interface property such as `IsMappable`, `IsTestAutomationSupportEnabled`, or `InitialValue` on a function port exposed by bus features → `set_function_port_property`
 - **Matrix Element Property** = communication-database property such as PDU/signal `Length` or signal `Initial value` → `set_matrix_element_property`
 - **I/O Function Block Property** = hardware access setting such as `BaudRate` → `set_io_function_block_property`
-- **Bus Simulation Container** (.bsc) = compiled artifact for explicit BSC delivery, VEOS consumption, or other user-requested container output → `generate_bus_containers`
+- **Bus Simulation Container** (.bsc) = packaged bus communication → `generate_bus_containers`. Consumers: VEOS (offline SIL simulation) and ConfigurationDesk (real-time application on SCALEXIO / MicroAutoBox III / MicroLabBox II, via `add_model`). BSC output is not VEOS-only.
 - Most workflows use: matrix → bus config → features/property edits → model/app-process/hardware setup, with optional BSC generation only when the user asks for it.
 
 ## ERROR RECOVERY
