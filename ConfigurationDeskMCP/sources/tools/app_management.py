@@ -7,6 +7,7 @@ from sources.models.app_management_inputs import (
     RemoveApplicationInput,
 )
 from sources.server.app import mcp
+from sources.server.preconditions import with_preconditions
 from sources.services import app_management_service as svc
 
 
@@ -69,3 +70,23 @@ async def remove_application(input: RemoveApplicationInput) -> str:
 )
 async def list_applications() -> str:
     return await svc.list_applications()
+
+
+@mcp.tool(
+    name="add_processing_unit_application",
+    description=(
+        "Add a processing unit application to the executable application. "
+        "An executable application has one or more processing unit applications (PUA); "
+        "each PUA is executed on one processing unit (PU) and hosts one or more "
+        "application processes (AP)."
+    ),
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+)
+@with_preconditions("connection", "project", "application")
+async def add_processing_unit_application() -> str:
+    return await svc.add_processing_unit_application()

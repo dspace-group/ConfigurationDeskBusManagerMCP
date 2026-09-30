@@ -2,7 +2,6 @@
   "tools": [
     "activate_application",
     "add_application",
-    "add_application_processing_unit",
     "add_communication_matrix",
     "add_feature_to_bus_element",
     "add_hardware_element",
@@ -11,6 +10,7 @@
     "add_model",
     "add_model_port_to_signal_chain",
     "add_model_to_signal_chain",
+    "add_processing_unit_application",
     "analyze_models",
     "assign_bus_access",
     "assign_bus_config_to_application_process",

@@ -148,7 +148,7 @@ async def create_application_process(
             "No new application process became observable after the creation call.",
             transient=False,
             next_action=(
-                "Verify a ProcessingUnitApplication exists (use `add_application_processing_unit` "
+                "Verify a ProcessingUnitApplication exists (use `add_processing_unit_application` "
                 "for VEOS workflows or register a hardware platform), then retry."
             ),
         )

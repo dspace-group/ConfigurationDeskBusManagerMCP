@@ -8,11 +8,11 @@ from pydantic import BaseModel, Field
 
 class AddModelInput(BaseModel):
     path: str = Field(
-        description="Path to the model file (.slx, .mdl, .sic, or .bsc), e.g. 'C:/Models/Restbus_Model_64-bit.sic'"
+        description="Path to the model file (.slx, .mdl, .sic, .bsc, or .fmu), e.g. 'C:/Models/Restbus_Model_64-bit.sic'"
     )
     analyze: bool = Field(
         default=True,
-        description="Analyze model after adding. Set false for .sic/.bsc files, e.g. true",
+        description="Analyze model after adding. Set false for .sic/.bsc/.fmu files, e.g. true",
     )
     create_preconfigured: bool = Field(
         default=True,

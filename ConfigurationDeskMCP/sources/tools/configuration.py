@@ -14,7 +14,8 @@ from sources.services import configuration_service as svc
     name="list_configuration",
     description=(
         "List the application configuration tree "
-        + "(executable applications, processing units, tasks, events). "
+        + "(executable applications, processing unit applications, application processes, "
+        + "tasks, events). "
         + "Results are paginated; call again with next_offset to retrieve later pages."
     ),
     annotations={
