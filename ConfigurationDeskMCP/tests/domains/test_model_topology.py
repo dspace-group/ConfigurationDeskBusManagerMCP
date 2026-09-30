@@ -41,7 +41,16 @@ def test_analyze_models(fake_bridge):
 
 
 def test_create_application_process(fake_bridge):
-    run_ok(model_svc.create_application_process())
+    payload = run_ok(model_svc.create_application_process())
+    assert payload["provide_default_task"] is True
+    assert payload["default_task_set"] is True
+
+
+def test_create_application_process_without_default_task(fake_bridge):
+    payload = run_ok(model_svc.create_application_process(provide_default_task=False))
+    assert payload["provide_default_task"] is False
+    assert payload["default_task_set"] is False
+    assert "without a default task" in payload["message"]
 
 
 def test_list_models(fake_bridge):

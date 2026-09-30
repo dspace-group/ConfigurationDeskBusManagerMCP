@@ -35,7 +35,7 @@ ConfigurationDesk provides a COM-based automation API for HIL (Hardware-in-the-L
 6. **Analyze Models** — Use `analyze_models` to detect ports and interfaces
 7. **Add Communication Matrix** — Use `add_communication_matrix` for ARXML/DBC/LDF files
 8. **Configure Bus** — Use `create_bus_configuration` and `assign_matrix_to_bus_config`
-9. **Create Application Process** — Use `create_application_process` (creates an application process providing a default periodic task; pass `bus_config_names` to also assign it to bus configurations) or `create_preconfigured_application_process` (model-driven)
+9. **Create Application Process** — Use `create_application_process` (creates an application process; `provide_default_task=true` adds the periodic default task, `false` creates a bare process, and the value must be sent whenever the request states it — omit it only when it was never stated, which makes the server ask the user; pass `bus_config_names` to also assign it to bus configurations) or `create_preconfigured_application_process` (model-driven)
 10. **Configure Function Ports** — Use `set_function_port_property` for IsMappable etc.
 10b. **Configure Feature/Matrix Properties** — Use `set_bus_config_element_property` for feature nodes like 'Countdown start value' or 'Overwrite value', and `set_matrix_element_property` for matrix properties like PDU/signal 'Length' or 'Initial value'.
 11. **Connect Ports** — Use `auto_connect_matching_io_function_blocks_to_model_ports` for automatic name-based matching
@@ -117,7 +117,7 @@ _TOOL_CATEGORIES = """\
 ## Model Topology
 - `add_model` / `replace_model` / `remove_model`
 - `analyze_models` — Analyze model ports and interfaces
-- `create_application_process` — Create an application process providing a default periodic task (model-less; optional bus-config assignment)
+- `create_application_process` — Create an application process, with or without a periodic default task (send `provide_default_task` whenever the request states it; model-less; optional bus-config assignment; call once per process when several are requested)
 - `list_models` — List all models
 
 ## Hardware Topology

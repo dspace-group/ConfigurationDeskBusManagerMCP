@@ -200,6 +200,70 @@ def test_create_application_process_can_run_without_model(monkeypatch):
     assert payload["success"] is True
 
 
+def test_provide_default_task_elicitation_accepts_user_choice():
+    from sources.tools.model_topology import DefaultTaskChoice, _resolve_provide_default_task
+
+    class _Ctx:
+        async def elicit(self, message, schema):
+            assert schema is DefaultTaskChoice
+            return SimpleNamespace(
+                action="accept", data=DefaultTaskChoice(provide_default_task=False)
+            )
+
+    assert asyncio.run(_resolve_provide_default_task(_Ctx())) is False
+
+
+@pytest.mark.parametrize("action", ["decline", "cancel"])
+def test_provide_default_task_elicitation_falls_back_when_not_answered(action):
+    from sources.tools.model_topology import _resolve_provide_default_task
+
+    class _Ctx:
+        async def elicit(self, message, schema):
+            return SimpleNamespace(action=action)
+
+    assert asyncio.run(_resolve_provide_default_task(_Ctx())) is True
+
+
+def test_provide_default_task_elicitation_falls_back_when_unsupported():
+    from sources.tools.model_topology import _resolve_provide_default_task
+
+    class _Ctx:
+        async def elicit(self, message, schema):
+            raise RuntimeError("client does not support elicitation")
+
+    assert asyncio.run(_resolve_provide_default_task(_Ctx())) is True
+
+
+@pytest.mark.parametrize("stated", [True, False])
+def test_nested_input_default_task_is_used_without_eliciting(monkeypatch, stated):
+    """A host that nests arguments must not trigger a redundant user prompt."""
+    from sources.models.model_topology_inputs import CreateApplicationProcessInput
+    from sources.tools import model_topology as tools
+
+    captured = {}
+
+    async def fake_create(name, bus_config_names, provide_default_task):
+        captured["provide_default_task"] = provide_default_task
+        captured["name"] = name
+        return "{}"
+
+    async def fail_elicit(ctx):
+        raise AssertionError("user must not be asked when the value was supplied")
+
+    monkeypatch.setattr(tools.svc, "create_application_process", fake_create)
+    monkeypatch.setattr(tools, "_resolve_provide_default_task", fail_elicit)
+
+    asyncio.run(
+        tools.create_application_process.__wrapped__(
+            ctx=None,
+            input=CreateApplicationProcessInput(name="Apdf", provide_default_task=stated),
+        )
+    )
+
+    assert captured["provide_default_task"] is stated
+    assert captured["name"] == "Apdf"
+
+
 def test_auto_connect_io_function_blocks_requires_application_process(monkeypatch):
     conn = SimpleNamespace(is_connected=True)
 

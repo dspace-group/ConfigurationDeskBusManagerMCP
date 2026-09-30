@@ -112,6 +112,7 @@ async def analyze_models() -> str:
 async def create_application_process(
     name: Optional[str] = None,
     bus_config_names: Optional[list[str]] = None,
+    provide_default_task: bool = True,
 ) -> str:
     try:
         conn = get_connection()
@@ -120,6 +121,7 @@ async def create_application_process(
             conn,
             name,
             bus_config_names,
+            provide_default_task,
             timeout_ms=120000,
         )
         if result.get("error"):
@@ -129,7 +131,13 @@ async def create_application_process(
             payload.pop("verified", None)
             process_name = payload.get("process_name") or "(default name)"
             default_task_set = payload.get("default_task_set")
-            if default_task_set:
+            if not provide_default_task:
+                msg = (
+                    f"Application process '{process_name}' created without a default task "
+                    "('Provide default task' left disabled). Assign a model implementation or "
+                    "create a task manually before building."
+                )
+            elif default_task_set:
                 msg = (
                     f"Application process '{process_name}' created with a default task "
                     f"({payload.get('default_task_property') or 'ProvideDefaultTask'} = True)."

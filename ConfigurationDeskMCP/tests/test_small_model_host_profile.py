@@ -13,7 +13,7 @@ pytest.importorskip("mcp")
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PROFILE = _REPO_ROOT / "docs" / "small-model-host-profile.md"
 _TOOL_REFERENCE = re.compile(r"`([a-z][a-z0-9_]*)`")
-_ENVELOPE_FIELDS = {"next_action", "recovery_hint"}
+_NON_TOOL_IDENTIFIERS = {"next_action", "recovery_hint", "provide_default_task"}
 _REQUIRED_RULES = (
     "`start_configurationdesk`",
     "`success=false`",
@@ -69,7 +69,7 @@ def test_small_model_host_profile_references_registered_tools_only():
     from sources.server import registry
 
     profile = _PROFILE.read_text(encoding="utf-8")
-    referenced_tools = set(_TOOL_REFERENCE.findall(profile)) - _ENVELOPE_FIELDS
+    referenced_tools = set(_TOOL_REFERENCE.findall(profile)) - _NON_TOOL_IDENTIFIERS
 
     assert referenced_tools <= set(registry.registered_tool_names())
 

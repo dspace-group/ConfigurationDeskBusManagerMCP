@@ -244,7 +244,7 @@ Skip for .sic/.bsc/.fmu (already analyzed).
 
 @mcp.prompt(
     name="create_application_process",
-    description="Single task: create an application process (default periodic task), optionally assigned to bus configurations or a specific model",
+    description="Single task: create an application process (with or without a default periodic task), optionally assigned to bus configurations or a specific model",
 )
 def create_application_process(
     process_name: str = "Restbus_ApplicationProcess",
@@ -253,8 +253,8 @@ def create_application_process(
     return f"""\
 # Create an Application Process
 
-Goal: provide execution scheduling — mirrors the UI command
-'New → Application Process (Providing Default Task)'.
+Goal: provide execution scheduling — mirrors the UI commands
+'New → Application Process (Providing Default Task)' and 'New → Application Process'.
 
 {_ENSURE_RUNNING}
 
@@ -262,10 +262,24 @@ Goal: provide execution scheduling — mirrors the UI command
 A ProcessingUnitApplication is mandatory regardless of the target (real-time
 hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
 
-## Step 1 — Create the process (default periodic task)
-Call `create_application_process` with name="{process_name}". This sets
-'Provide default task' = true, so a periodic default task with a resolved runnable
-function is created automatically.
+## Step 1 — Create the process
+Call `create_application_process` with name="{process_name}".
+
+## Default task
+- `provide_default_task=true` → 'Provide default task' = true, so a periodic default
+  task with a resolved runnable function is created automatically. Required when
+  working WITHOUT a behavior model (restbus simulation, wire testing).
+- `provide_default_task=false` → bare application process; its task comes from an
+  assigned model implementation or must be created manually.
+- Always send the parameter when the request already states it ('with default task'
+  → true, 'without default task' → false). Omitting it re-asks the user for an
+  answer that was already given.
+- Omit the parameter only when it was never stated → the server asks the user; if no
+  answer is received, a default task is created.
+
+## Several processes in one request
+Call `create_application_process` once per process, carrying that process's own
+`name` and its own `provide_default_task` value into each call.
 
 ## Bus-config assignment
 - Omit `bus_config_names` → assigned to ALL existing bus configurations.
