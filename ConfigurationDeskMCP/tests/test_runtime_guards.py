@@ -216,7 +216,7 @@ def test_auto_connect_io_function_blocks_requires_application_process(monkeypatc
     monkeypatch.setattr(observations, "dispatch", fake_dispatch)
 
     payload = json.loads(
-        asyncio.run(bus_access_service.auto_connect_matching_io_function_blocks_to_model_ports())
+        asyncio.run(bus_access_service.auto_connect_io_blocks_to_model_port_blocks())
     )
 
     assert payload["success"] is False

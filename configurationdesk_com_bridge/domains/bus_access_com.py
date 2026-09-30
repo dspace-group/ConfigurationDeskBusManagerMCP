@@ -553,7 +553,7 @@ def assign_hardware_automatically(connection) -> dict[str, Any]:
     }
 
 
-def auto_connect_matching_io_function_blocks_to_model_ports(connection) -> dict[str, Any]:
+def auto_connect_io_blocks_to_model_port_blocks(connection) -> dict[str, Any]:
     """Auto-connect I/O function block ports to matching model port blocks.
 
      The COM call has the signature::
@@ -674,11 +674,6 @@ def _count_links(connection) -> int:
             except Exception:
                 continue
     return total
-
-
-# Backwards compatibility alias for any internal callers still using the
-# legacy name. Public tool surface uses the renamed entry point.
-connect_io_function_blocks_to_model_ports = auto_connect_matching_io_function_blocks_to_model_ports
 
 
 def create_preconfigured_application_process(connection, model_name: str) -> dict[str, Any]:

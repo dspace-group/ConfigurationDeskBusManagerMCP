@@ -68,7 +68,7 @@ For other features, see the `configurationdesk://reference/features` resource.
 ## Step 5 — Add the behavior model
 Call `add_model` with path="{model_path}".
 For .slx/.mdl also call `analyze_models`; .sic/.bsc are already analyzed.
-Then `add_model_to_signal_chain` to expose the model ports.
+Then `add_model_to_signal_chain` to expose the model port blocks.
 
 ## Step 6 — Create the application process and assign the model
 When creating an application process, a Processing Unit Application should be 
@@ -88,7 +88,7 @@ For a model-less restbus process instead, call `create_application_process` — 
 auto-assigns to "{bus_config_name}".
 
 ## Step 7 — Connect the ports
-Call `auto_connect_matching_io_function_blocks_to_model_ports` to wire matching
+Call `auto_connect_io_blocks_to_model_port_blocks` to wire matching
 function ports to model ports by name.
 
 ## Step 8 — Resolve conflicts

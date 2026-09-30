@@ -99,7 +99,7 @@ prerequisites.
 8c. `set_matrix_element_property` → set communication-matrix element properties like PDU/signal Length or Initial value
 9. `add_model` → load behavior model (.slx/.mdl/.sic/.bsc/.fmu)
 10. `create_application_process` → set up execution scheduling
-11. `auto_connect_matching_io_function_blocks_to_model_ports` → wire bus ports to model
+11. `auto_connect_io_blocks_to_model_port_blocks` → wire bus ports to model
 12. `generate_bus_containers` → OPTIONAL: generate BSC/container output only when the user explicitly asks for it
 13. Hardware topology → ASK USER which approach:
     - `add_hardware_platform` → register SCALEXIO, MicroAutoBox III, or MicroLabBox II hardware (needs address from user)

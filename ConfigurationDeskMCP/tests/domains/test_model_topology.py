@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from configurationdesk_com_bridge.domains import model_topology_com
 from sources.services import model_topology_service as model_svc
 
-from tests.domains.conftest import run_ok
+from tests.domains.conftest import run_ok, run_raw
 
 COVERS = (
     "add_model",
@@ -18,7 +18,8 @@ COVERS = (
     "create_application_process",
     "list_models",
     "add_model_to_signal_chain",
-    "add_model_port_to_signal_chain",
+    "add_model_port_block_to_signal_chain",
+    "list_model_port_blocks",
     "list_model_ports",
 )
 
@@ -52,13 +53,31 @@ def test_add_model_to_signal_chain(fake_bridge):
     run_ok(model_svc.add_model_to_signal_chain("demosmd_io"))
 
 
-def test_add_model_port_to_signal_chain(fake_bridge):
-    run_ok(model_svc.add_model_port_to_signal_chain("demosmd_io", "In1"))
+def test_add_model_port_block_to_signal_chain(fake_bridge):
+    run_ok(model_svc.add_model_port_block_to_signal_chain("demosmd_io", "In1"))
+
+
+def test_list_model_port_blocks(fake_bridge):
+    payload = run_ok(model_svc.list_model_port_blocks("demosmd_io"))
+    assert payload["count"] == 2
 
 
 def test_list_model_ports(fake_bridge):
     payload = run_ok(model_svc.list_model_ports("demosmd_io"))
     assert payload["count"] == 2
+    assert payload["ports"][0]["port_block_name"] == "In1"
+    assert payload["ports"][0]["port_type"] == "In"
+
+
+def test_list_model_ports_scoped_to_one_port_block(fake_bridge):
+    payload = run_ok(model_svc.list_model_ports("demosmd_io", "In1"))
+    assert payload["port_blocks_scanned"] == ["In1"]
+
+
+def test_list_model_ports_rejects_unknown_port_block(fake_bridge):
+    payload = run_raw(model_svc.list_model_ports("demosmd_io", "NoSuchBlock"))
+    assert payload["success"] is False
+    assert "NoSuchBlock" in payload["error"]
 
 
 # ── COM-layer behavior (model_topology_com) ────────────────────────────────

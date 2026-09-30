@@ -9,6 +9,10 @@ import logging
 import os
 from typing import Any, Optional
 
+from configurationdesk_com_bridge.domains._property_helpers import (
+    iter_properties,
+    normalize_property_name,
+)
 from configurationdesk_com_bridge.domains.verify_com import (
     list_application_process_names,
     list_model_names,
@@ -471,46 +475,132 @@ def list_models(connection) -> list[str]:
 
 
 def add_model_to_signal_chain(connection, model_name: str) -> dict[str, Any]:
-    """Add all ports of a model to the signal chain.
+    """Add all model port blocks of a model to the signal chain.
 
-    Sets ``IsInApplication = True`` on the model's root port block, which
-    causes ConfigurationDesk to include every port of that model in the
-    signal chain.
+    Sets ``IsInApplication = True`` on the model's root node in the model
+    topology, which causes ConfigurationDesk to include every model port
+    block of that model in the signal chain.
     """
     mt = connection.model_topology
     model_block = mt.Item(model_name)
     model_block.IsInApplication = True
-    _log.info("Added all ports of model '%s' to the signal chain", model_name)
-    return {"model_name": model_name, "scope": "all_ports"}
+    _log.info("Added all model port blocks of model '%s' to the signal chain", model_name)
+    return {"model_name": model_name, "scope": "all_port_blocks"}
 
 
-def add_model_port_to_signal_chain(connection, model_name: str, port_name: str) -> dict[str, Any]:
-    """Add a single named port of a model to the signal chain.
+def add_model_port_block_to_signal_chain(
+    connection, model_name: str, port_block_name: str
+) -> dict[str, Any]:
+    """Add a single named model port block of a model to the signal chain.
 
-    Sets ``IsInApplication = True`` on the specific port block identified by
-    *port_name* within the model's port block collection.
+    Sets ``IsInApplication = True`` on the specific model port block
+    identified by *port_block_name* within the model's port block collection.
     """
     mt = connection.model_topology
-    port_block = mt.Item(model_name).Item(port_name)
+    port_block = mt.Item(model_name).Item(port_block_name)
     port_block.IsInApplication = True
-    _log.info("Added port '%s' of model '%s' to the signal chain", port_name, model_name)
-    return {"model_name": model_name, "port_name": port_name, "scope": "single_port"}
+    _log.info(
+        "Added model port block '%s' of model '%s' to the signal chain",
+        port_block_name,
+        model_name,
+    )
+    return {
+        "model_name": model_name,
+        "port_block_name": port_block_name,
+        "scope": "single_port_block",
+    }
 
 
-def list_model_ports(connection, model_name: str) -> list[str]:
-    """Return the names of all port blocks available for *model_name*.
+def list_model_port_blocks(connection, model_name: str) -> list[str]:
+    """Return the names of all model port blocks available for *model_name*.
 
-    Iterates over the items directly under the model's root block in the
+    Iterates over the items directly under the model's root node in the
     model topology, which correspond to the model port blocks exposed by
     ConfigurationDesk after model analysis.
     """
     mt = connection.model_topology
     model_block = mt.Item(model_name)
-    ports: list[str] = []
+    port_blocks: list[str] = []
     for item in model_block:
         try:
-            ports.append(item.Name)
+            port_blocks.append(item.Name)
         except Exception:
-            _log.warning("Could not enumerate ports for model '%s'", model_name)
+            _log.warning("Could not enumerate model port blocks for model '%s'", model_name)
 
-    return ports
+    return port_blocks
+
+
+# Read-only model port properties documented in the ConfigurationDesk User
+# Interface Reference ("Model Port Properties"); keys are normalized names.
+_MODEL_PORT_PROPERTIES = {
+    "porttype": "port_type",
+    "datatype": "data_type",
+    "datawidth": "data_width",
+    "signalid": "signal_id",
+    "description": "description",
+    "unit": "unit",
+    "variablesize": "variable_size",
+}
+
+
+def _read_model_port_properties(port: Any) -> dict[str, Any]:
+    properties = getattr(port, "Properties", None)
+    if properties is None:
+        return {}
+    values: dict[str, Any] = {}
+    for handle in iter_properties(properties):
+        key = _MODEL_PORT_PROPERTIES.get(normalize_property_name(getattr(handle, "Name", "") or ""))
+        if key is None:
+            continue
+        try:
+            values[key] = handle.Value
+        except Exception:
+            values[key] = None
+    return values
+
+
+def list_model_ports(
+    connection, model_name: str, port_block_name: Optional[str] = None
+) -> dict[str, Any]:
+    """Return the model ports contained in a model's model port blocks.
+
+    Model ports are the children of a model port block: data inports, data
+    outports, runnable function ports, and configuration ports. Each entry
+    carries the owning block plus the read-only properties ConfigurationDesk
+    exposes for a model port.
+
+    Pass *port_block_name* to restrict the result to a single model port block.
+    """
+    mt = connection.model_topology
+    model_block = mt.Item(model_name)
+
+    ports: list[dict[str, Any]] = []
+    scanned: list[str] = []
+    for block in model_block:
+        try:
+            block_name = block.Name
+        except Exception:
+            _log.warning("Could not enumerate model port blocks for model '%s'", model_name)
+            continue
+        if port_block_name and block_name != port_block_name:
+            continue
+        scanned.append(block_name)
+        for port in block:
+            try:
+                entry: dict[str, Any] = {"name": port.Name, "port_block_name": block_name}
+            except Exception:
+                _log.warning(
+                    "Could not enumerate model ports of block '%s' on model '%s'",
+                    block_name,
+                    model_name,
+                )
+                continue
+            entry.update(_read_model_port_properties(port))
+            ports.append(entry)
+
+    return {
+        "model_name": model_name,
+        "port_blocks_scanned": scanned,
+        "ports": ports,
+        "count": len(ports),
+    }

@@ -11,7 +11,7 @@ authoritative.
    `diagnose_connection` once, inspect its result, and do not blindly retry.
 2. For a multi-step task, use the closest existing workflow prompt before
    assembling an ad hoc tool sequence.
-3. Do not invent project names, application names, model ports, matrix paths,
+3. Do not invent project names, application names, model port blocks, matrix paths,
    XPath expressions, hardware addresses, or channel indexes. Use a list or
    find tool when an identifier is unknown.
 4. Stop when a tool returns `success=false`. Treat `verified=false` as
@@ -37,8 +37,8 @@ authoritative.
 - Use `add_hardware_platform` only for physical SCALEXIO, MicroAutoBox III, or
   MicroLabBox II hardware with an address. Use `import_hardware_topology` for
   an `.htfx` file.
-- Use `add_model_to_signal_chain` for every port of one model and
-  `add_model_port_to_signal_chain` only for a named port. Use
+- Use `add_model_to_signal_chain` for every model port block of one model and
+  `add_model_port_block_to_signal_chain` only for a named block. Use
   `create_preconfigured_application_process` only when one specific model is
   named; otherwise use `create_application_process`.
 - Use `create_io_function_block` for CAN, LIN, or Ethernet hardware channels.
@@ -47,9 +47,11 @@ authoritative.
 - Use `assign_channel_set` after reviewing a specific returned channel index.
   Use `auto_assign_channel_set` for one function block or
   `assign_hardware_automatically` for all eligible function blocks.
-- Use `auto_connect_matching_io_function_blocks_to_model_ports` for bulk
+- Use `list_model_port_blocks` to get block names required by other tools. Use
+  `list_model_ports` only to inspect port direction, data type, or data width.
+- Use `auto_connect_io_blocks_to_model_port_blocks` for bulk
   name-matched connections. Use `connect_function_block_port_to_model_port`
-  for one explicit function-block/model-port pair.
+  for one explicit function-block/model-port-block pair.
 
 ## Discovery and Validation Rules
 

@@ -15,7 +15,7 @@ COVERS = (
     "assign_channel_set",
     "auto_assign_channel_set",
     "assign_hardware_automatically",
-    "auto_connect_matching_io_function_blocks_to_model_ports",
+    "auto_connect_io_blocks_to_model_port_blocks",
     "create_preconfigured_application_process",
 )
 
@@ -70,9 +70,9 @@ def test_assign_hardware_automatically(fake_bridge):
     run_ok(access_svc.assign_hardware_automatically())
 
 
-def test_auto_connect_matching_io_function_blocks_to_model_ports(fake_bridge):
+def test_auto_connect_io_blocks_to_model_port_blocks(fake_bridge):
     # Requires a ready model and application process; satisfied by the fake bridge.
-    run_ok(access_svc.auto_connect_matching_io_function_blocks_to_model_ports())
+    run_ok(access_svc.auto_connect_io_blocks_to_model_port_blocks())
 
 
 def test_create_preconfigured_application_process(fake_bridge):
