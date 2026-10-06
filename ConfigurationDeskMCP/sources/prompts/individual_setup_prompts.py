@@ -262,24 +262,27 @@ Goal: provide execution scheduling — mirrors the UI commands
 A ProcessingUnitApplication is mandatory regardless of the target (real-time
 hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
 
-## Step 1 — Create the process
+## Step 1 — Create the application process
 Call `create_application_process` with name="{process_name}".
 
 ## Default task
 - `provide_default_task=true` → 'Provide default task' = true, so a periodic default
   task with a resolved runnable function is created automatically. Required when
   working WITHOUT a behavior model (restbus simulation, wire testing).
-- `provide_default_task=false` → bare application process; its task comes from an
-  assigned model implementation or must be created manually.
+- `provide_default_task=false` → bare application process; its tasks can be provided by
+  assigned model implementations, can be created and configured automatically using the
+  Optimize Configuration command for application processes with models, or can be
+  created manually.
 - Always send the parameter when the request already states it ('with default task'
   → true, 'without default task' → false). Omitting it re-asks the user for an
   answer that was already given.
 - Omit the parameter only when it was never stated → the server asks the user; if no
   answer is received, a default task is created.
 
-## Several processes in one request
-Call `create_application_process` once per process, carrying that process's own
-`name` and its own `provide_default_task` value into each call.
+## Several application processes in one request
+Call `create_application_process` once per application process, carrying that
+application process's own `name` and its own `provide_default_task` value into
+each call.
 
 ## Bus-config assignment
 - Omit `bus_config_names` → assigned to ALL existing bus configurations.
@@ -287,7 +290,7 @@ Call `create_application_process` once per process, carrying that process's own
 - Skip assignment → pass an empty list [].
 
 ## Model-driven alternative
-For a process pre-configured for ONE behavior model, call
+For an application process pre-configured for ONE behavior model, call
 `create_preconfigured_application_process` with model_name="<model>" instead.
 """
 

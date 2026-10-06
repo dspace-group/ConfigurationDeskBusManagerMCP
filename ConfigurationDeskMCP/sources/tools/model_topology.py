@@ -31,7 +31,8 @@ class DefaultTaskChoice(BaseModel):
         description=(
             "Yes: create the application process with a periodic default task "
             "(no behavior model needed). No: create a bare application process "
-            "whose task comes from an assigned model implementation or is created manually."
+            "whose tasks will be provided by assigned model implementations, created and "
+            "configured by Optimize Configuration command, or created manually."
         ),
     )
 
@@ -49,7 +50,9 @@ async def _resolve_provide_default_task(ctx: Context | None) -> bool:
             message=(
                 "Should the new application process provide a default task "
                 "(a periodic task with a resolved runnable function, required when "
-                "working without a behavior model)?"
+                "working without a behavior model)? Answer No if model implementations "
+                "are to be added to this application process, no default task should "
+                "be created in that case."
             ),
             schema=DefaultTaskChoice,
         )
@@ -159,9 +162,9 @@ async def analyze_models() -> str:
         "implementation or be created manually. OMIT the flag ONLY when neither the request nor the "
         "conversation says anything about a default task; the server then asks the user and falls "
         "back to creating a default task if no answer arrives. "
-        "MULTIPLE PROCESSES: when one request asks for several application processes, call this tool "
-        "once per process and carry that process's own `name` and its own `provide_default_task` "
-        "value into each call. "
+        "MULTIPLE APPLICATION PROCESSES: when one request asks for several application processes, "
+        "call this tool once per application process and carry that application process's own "
+        "`name` and its own `provide_default_task` value into each call. "
         "ARGUMENTS: send `name`, `provide_default_task`, and `bus_config_names` as TOP-LEVEL "
         "arguments. A nested `{'input': {...}}` object is accepted for compatibility, but only the "
         "fields listed here are read — never invent a different wrapper. "

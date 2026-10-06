@@ -84,7 +84,7 @@ configured appropriately.
 Then assign the bus configuration to that application process with
 `assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
 
-For a model-less restbus process instead, call `create_application_process` with
+For a model-less restbus application process instead, call `create_application_process` with
 `provide_default_task=true` — it auto-assigns to "{bus_config_name}".
 
 ## Step 7 — Connect the ports

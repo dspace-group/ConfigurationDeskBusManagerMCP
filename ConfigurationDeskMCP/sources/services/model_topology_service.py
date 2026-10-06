@@ -134,8 +134,9 @@ async def create_application_process(
             if not provide_default_task:
                 msg = (
                     f"Application process '{process_name}' created without a default task "
-                    "('Provide default task' left disabled). Assign a model implementation or "
-                    "create a task manually before building."
+                    "('Provide default task' left disabled). Assign a model implementation, then "
+                    "start the 'Optimize Configuration' command on the application process before "
+                    "building."
                 )
             elif default_task_set:
                 msg = (

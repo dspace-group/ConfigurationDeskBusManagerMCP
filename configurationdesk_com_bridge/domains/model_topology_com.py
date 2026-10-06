@@ -375,11 +375,12 @@ def create_application_process(
          target bus configuration).
 
     With ``provide_default_task=False`` step 2 is skipped, which mirrors the
-    plain *New → Application Process* command: the process is created without
-    a task, so a task must be created manually or supplied by an assigned
-    model implementation.
+    plain *New → Application Process* command: the application process is created
+    without a task, so tasks must be created manually, can be provided by model
+    implementations, or can be created and configured automatically using the
+    Optimize Configuration command for application processes with models.
 
-    A process providing a default task is the canonical way to set up
+    An application process providing a default task is the canonical way to set up
     scheduling when working *without* a behavior model (e.g. pure restbus
     simulation that is only accessed from experiment software). Use
     :func:`create_preconfigured_application_process` instead when an
@@ -444,7 +445,7 @@ def create_application_process(
     else:
         default_task_set, default_task_property = False, ""
 
-    # Wait until the new process becomes observable.
+    # Wait until the new application process becomes observable.
     verified, processes_after = wait_for_state(
         lambda: list_application_process_names(connection),
         lambda names: bool(set(names) - before_processes),

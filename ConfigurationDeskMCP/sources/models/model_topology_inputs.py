@@ -60,7 +60,7 @@ class CreateApplicationProcessInput(BaseModel):
     bus_config_names: Optional[list[str]] = Field(
         default=None,
         description=(
-            "Bus configurations to assign the process to. Omit = all existing ones, "
+            "Bus configurations to assign the application process to. Omit = all existing ones, "
             "empty list = skip assignment."
         ),
     )
