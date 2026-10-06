@@ -32,7 +32,7 @@ authoritative.
   PDU/signal request to whole-ECU scope.
 - Set a communication-matrix value with `set_matrix_element_property`, a bus
   feature or bus-element value with `set_bus_config_element_property`, an
-  exposed function-port value with `set_function_port_property`, and a
+  exposed function port value with `set_function_port_property`, and a
   hardware I/O value with `set_io_function_block_property`.
 - Use `add_hardware_platform` only for physical SCALEXIO, MicroAutoBox III, or
   MicroLabBox II hardware with an address. Use `import_hardware_topology` for

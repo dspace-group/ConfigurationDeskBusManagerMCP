@@ -99,7 +99,7 @@ Call `check_conflicts` and fix any reported issues before producing the delivera
 - deliverable="bsc" (container delivery): call `generate_bus_containers`, then
   `find_bus_config_elements` with xpath="//FunctionPort" to confirm the packaged
   interface. The BSC packages the existing function ports; it does not create them.
-  The container can be imported into VEOS for SIL simulation, or back into
+  The container can be imported into VEOS to build an offline simulation application, or back into
   ConfigurationDesk via `add_model` to build a real-time application — so this
   deliverable does not rule out the real-time path below.
 - deliverable="rta" (real hardware): assign bus hardware

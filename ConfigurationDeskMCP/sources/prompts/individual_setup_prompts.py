@@ -194,7 +194,7 @@ element_type="{target_type}", bus_config_name="{bus_config_name}".
 - Feature-node values (Countdown start value, Feature switch, Overwrite value,
   Offset value, manipulation Length) → `set_bus_config_element_property`.
 - Communication-matrix values (PDU/signal Length, signal Initial value) → `set_matrix_element_property`.
-- Function-port values (IsMappable, IsTestAutomationSupportEnabled, InitialValue) → `set_function_port_property`.
+- Function port values (IsMappable, IsTestAutomationSupportEnabled, InitialValue) → `set_function_port_property`.
 
 ## Verify
 Call `find_bus_config_elements` with xpath="//FunctionPort" to inspect the exposed
@@ -225,8 +225,8 @@ Call `add_model` with path="{model_path}".
 - .fmu — Functional Mock-up Unit (FMU)
 - .slx / .mdl — Simulink model (model analysis required).
 - .sic — Simulink implementation container.
-- .bsc — Bus Simulation Container. Carries bus communication; adding it
-  implements that communication in a real-time application.
+- .bsc — Bus simulation container. Contains configured bus communication. It can be used to implement 
+the bus communication in a real-time application (RTA) or offline simulation application (OSA).
 - .fmu — Functional Mock-up Unit (FMI-based model implementation).
 
 ## Step 2 — Analyze (Simulink model only)
