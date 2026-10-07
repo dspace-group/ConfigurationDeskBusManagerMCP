@@ -11,7 +11,7 @@ VEOS is a PC-based simulation platform, not a real-time hardware platform. For b
 simulation applications, the dSPACE product VEOS is necessary. Bus simulation containers (BSCs) that
 are generated with the Bus Manager via BusManager.Configure("GenerateContainers", [])  can either
 be used in ConfigurationDesk applications to create a real-time application or can be imported to
-VEOS to perform offline simulation.
+VEOS, which builds an offline simulation application.
 
 A hardware topology is a component of a ConfigurationDesk application that contains information on
 specific hardware systems.  A hardware topology can be created in three ways:
