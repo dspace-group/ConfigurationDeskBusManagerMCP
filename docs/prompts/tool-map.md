@@ -53,10 +53,10 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `assign_ecu_to_bus_config` | Bus configuration | Prompt: `create_bus_configuration` | Assign whole ECUs except `DUT_ECU` to the simulated part of `CAN_Restbus`; do not use this for an exact PDU or signal. |
 | `add_feature_to_bus_element` | Bus configuration | Prompt: `add_feature_to_bus_element` | Add exact feature `BusISignalValueAccess` to signal `EngineSpeed` in `CAN_Restbus`, then inspect the exposed function ports. |
 | `remove_bus_config_elements` | Bus configuration | [Bus Configuration](../tools/bus-configuration-mcp-tools.md) | Remove only ECU `ECU_A` from `CAN_Restbus`; confirm its type and scope first because its child signals and features are also removed. |
-| `generate_bus_containers` | Bus configuration | Prompt: `bus_manager_restbus_simulation` | After configuring the required bus configurations and features, generate BSC output only because container delivery was explicitly requested. |
+| `generate_bus_containers` | Bus configuration | Prompt: `bus_manager_restbus_simulation` | After configuring the required bus configurations and features, generate BSC output because container delivery was explicitly requested. |
 | `find_bus_config_elements` | Bus configuration | Prompt: `add_feature_to_bus_element` | In `CAN_Restbus`, find exposed function ports; use the returned XPath and next offset for precise property work or additional pages. |
 | `assign_bus_config_to_application_process` | Bus configuration | Prompt: `create_application_process` | After creating `RestbusProcess`, assign bus configuration `CAN_Restbus` to that exact application process. |
-| `set_function_port_property` | Bus configuration | [Property Setting Boundary](README.md#property-setting-boundary) | On the exposed function port in `CAN_Restbus`, set `IsMappable=true`; use this only for function-port interface properties. |
+| `set_function_port_property` | Bus configuration | [Property Setting Boundary](README.md#property-setting-boundary) | On the exposed function port in `CAN_Restbus`, set `IsMappable=true`; use this only for function port interface properties. |
 | `set_bus_config_element_property` | Bus configuration | Prompt: `configure_inspection_manipulation` | In `CAN_Restbus`, set an overwrite value on the exact TX signal `EngineSpeed`; use this for a bus feature, not a matrix value or function port. |
 
 ## Models and Signal Chain

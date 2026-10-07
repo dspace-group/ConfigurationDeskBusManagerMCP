@@ -138,7 +138,7 @@ prerequisites.
 - Ask the user only when the named PDU/signal scope is materially ambiguous across multiple ECUs/clusters or the instructions conflict.
 - "Set baud rate" → `set_io_function_block_property` (this is a hardware I/O setting, not bus config)
 - "Set function port property" or "set IsMappable / InitialValue on a port" → `set_function_port_property`
-- Do NOT call `generate_bus_containers` just to inspect, list, or set function-port properties. Function ports are exposed by assigned bus features; use `find_bus_config_elements` and `set_function_port_property` first.
+- Do NOT call `generate_bus_containers` just to inspect, list, or set function port properties. Function ports are exposed by assigned bus features; use `find_bus_config_elements` and `set_function_port_property` first.
 - If `set_function_port_property` fails because ports or property nodes are missing, call `find_bus_config_elements` and verify the assigned bus features / exact port XPath. Do NOT use `generate_bus_containers` as recovery for that failure.
 - "Set feature property", "set manipulation property", "set countdown", "set overwrite value", "set offset value", or "set frame length feature" → `set_bus_config_element_property` (NOT `set_function_port_property`)
 - "Set matrix property", "set signal length", "set PDU length", or "set matrix initial value" → `set_matrix_element_property` (NOT `set_bus_config_element_property`)
@@ -155,7 +155,7 @@ prerequisites.
 - **Function Port Property** = port interface property such as `IsMappable`, `IsTestAutomationSupportEnabled`, or `InitialValue` on a function port exposed by bus features → `set_function_port_property`
 - **Matrix Element Property** = communication-database property such as PDU/signal `Length` or signal `Initial value` → `set_matrix_element_property`
 - **I/O Function Block Property** = hardware access setting such as `BaudRate` → `set_io_function_block_property`
-- **Bus Simulation Container** (.bsc) = compiled artifact for explicit BSC delivery, VEOS consumption, or other user-requested container output → `generate_bus_containers`
+- **Bus simulation container** (.bsc) = packaged bus communication → `generate_bus_containers`. Consumers: VEOS (offline simulation application) and ConfigurationDesk (real-time application on SCALEXIO / MicroAutoBox III / MicroLabBox II, via `add_model`). BSC output is not VEOS-only.
 - Most workflows use: matrix → bus config → features/property edits → model/app-process/hardware setup, with optional BSC generation only when the user asks for it.
 
 ## ERROR RECOVERY

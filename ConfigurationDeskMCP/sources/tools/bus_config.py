@@ -353,10 +353,13 @@ async def remove_bus_config_elements(
 @mcp.tool(
     name="generate_bus_containers",
     description=(
-        "Generate Bus Simulation Containers (BSC) from the bus configurations. "
-        "BSCs are compiled artifacts for explicit VEOS/BSC delivery or other user-requested "
-        "container output. "
-        "Do NOT call this just to inspect, list, or set function-port properties — "
+        "Generate bus simulation containers (BSC) from the bus configurations. "
+        "A BSC packages the configured bus communication and has two consumers: "
+        "VEOS, to implement it in an offline simulation application; and "
+        "ConfigurationDesk, to implement it in a real-time application for SCALEXIO, "
+        "MicroAutoBox III, or MicroLabBox II (add the .bsc via `add_model`). "
+        "BSC output is therefore NOT VEOS-only and does not rule out a real-time build. "
+        "Do NOT call this just to inspect, list, or set function port properties — "
         "assigned features already expose those ports for find_bus_config_elements and "
         "set_function_port_property. Do NOT use this as recovery for a failed "
         "set_function_port_property call. "
@@ -481,7 +484,7 @@ async def assign_bus_config_to_application_process(
         "Do NOT generate bus containers just to use this tool; if the relevant features "
         "are already assigned, inspect ports with find_bus_config_elements and set them directly. "
         "If this tool reports missing property nodes or zero ports updated, re-run "
-        "find_bus_config_elements to verify the actual function-port names/XPath and the "
+        "find_bus_config_elements to verify the actual function port names/XPath and the "
         "assigned bus features. Do NOT use generate_bus_containers as recovery for a "
         "failed property write. "
         "Each property has a strict value type: bool properties "
@@ -562,7 +565,7 @@ async def set_function_port_property(
             description=(
                 "Coarse feature selector, e.g. 'ISignalValue', 'LinSchedulingTable', "
                 "or a concrete feature node such as 'BusISignalValueAccess'. "
-                "Prefer port_xpath when exact function-port names are known."
+                "Prefer port_xpath when exact function port names are known."
             ),
         ),
     ] = None,
