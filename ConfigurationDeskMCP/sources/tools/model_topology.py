@@ -3,12 +3,14 @@
 
 from typing import Annotated
 
-from pydantic import Field
+from mcp.server.fastmcp import Context
+from pydantic import BaseModel, Field
 
 from sources.models.model_topology_inputs import (
     AddModelInput,
     AddModelPortToSignalChainInput,
     AddModelToSignalChainInput,
+    CreateApplicationProcessInput,
     ListModelPortsInput,
     RemoveModelInput,
     ReplaceModelInput,
@@ -16,6 +18,49 @@ from sources.models.model_topology_inputs import (
 from sources.server.app import mcp
 from sources.server.preconditions import with_preconditions
 from sources.services import model_topology_service as svc
+
+# Fallback used when the user does not decide whether a default task is wanted.
+_DEFAULT_TASK_FALLBACK = True
+
+
+class DefaultTaskChoice(BaseModel):
+    """Elicitation schema for the 'Provide default task' decision."""
+
+    provide_default_task: bool = Field(
+        default=True,
+        description=(
+            "Yes: create the application process with a periodic default task "
+            "(no behavior model needed). No: create a bare application process "
+            "whose tasks will be provided by assigned model implementations, created and "
+            "configured by Optimize Configuration command, or created manually."
+        ),
+    )
+
+
+async def _resolve_provide_default_task(ctx: Context | None) -> bool:
+    """Ask the user whether the new application process should provide a default task.
+
+    Falls back to creating the default task when the client cannot elicit or the
+    user declines/cancels.
+    """
+    if ctx is None:
+        return _DEFAULT_TASK_FALLBACK
+    try:
+        result = await ctx.elicit(
+            message=(
+                "Should the new application process provide a default task "
+                "(a periodic task with a resolved runnable function, required when "
+                "working without a behavior model)? Answer No if model implementations "
+                "are to be added to this application process, no default task should "
+                "be created in that case."
+            ),
+            schema=DefaultTaskChoice,
+        )
+    except Exception:  # noqa: BLE001 - client may not support elicitation
+        return _DEFAULT_TASK_FALLBACK
+    if result.action == "accept":
+        return result.data.provide_default_task
+    return _DEFAULT_TASK_FALLBACK
 
 
 @mcp.tool(
@@ -102,15 +147,30 @@ async def analyze_models() -> str:
 @mcp.tool(
     name="create_application_process",
     description=(
-        "Create an application process that provides a default periodic task — the automation "
-        "equivalent of the UI command 'New → Application Process (Providing Default Task)'. "
+        "Create an application process on the active processing unit application — the "
+        "automation equivalent of the UI commands 'New → Application Process (Providing Default "
+        "Task)' and plain 'New → Application Process'. "
         "DECISION RULE: pick this tool when the user asks to create an application process and does "
         "NOT mention a specific behavior model. For the model-driven case, use "
         "`create_preconfigured_application_process` instead. "
-        "WHAT IT DOES: on the active executable application's ProcessingUnitApplication it (1) "
-        "creates an ApplicationProcess (optionally renamed via `name`) and (2) sets its "
-        "'Provide default task' property to True so ConfigurationDesk auto-creates the periodic "
-        "default task with a resolved runnable function — exactly like the UI command. "
+        "DEFAULT TASK (`provide_default_task`) — ALWAYS SEND THIS FLAG WHEN THE REQUEST OR THE "
+        "CONVERSATION ALREADY STATES IT; omitting it makes the server prompt the user again for an "
+        "answer that was already given. Map the wording literally: 'with default task', 'providing "
+        "default task', 'with a periodic task', 'restbus without a model' → "
+        "`provide_default_task=true`; 'without default task', 'no default task', 'bare application "
+        "process' → `provide_default_task=false`. true sets the 'Provide default task' property so "
+        "ConfigurationDesk auto-creates the periodic default task with a resolved runnable function "
+        "(required when working WITHOUT a behavior model, e.g. pure restbus simulation). false "
+        "creates a bare application process whose task must come from an assigned model "
+        "implementation or be created manually. OMIT the flag ONLY when neither the request nor the "
+        "conversation says anything about a default task; the server then asks the user and falls "
+        "back to creating a default task if no answer arrives. "
+        "MULTIPLE APPLICATION PROCESSES: when one request asks for several application processes, "
+        "call this tool once per application process and carry that application process's own "
+        "`name` and its own `provide_default_task` value into each call. "
+        "ARGUMENTS: send `name`, `provide_default_task`, and `bus_config_names` as TOP-LEVEL "
+        "arguments. A nested `{'input': {...}}` object is accepted for compatibility, but only the "
+        "fields listed here are read — never invent a different wrapper. "
         "BUS CONFIG ASSIGNMENT (default = ALL): the new application process is automatically "
         "assigned to every existing bus configuration (sets 'ManuallyAssignedApplicationProcess'). "
         "Pass `bus_config_names` to scope the assignment to specific configurations, or pass an "
@@ -127,6 +187,7 @@ async def analyze_models() -> str:
 )
 @with_preconditions("connection", "project", "application")
 async def create_application_process(
+    ctx: Context,
     name: Annotated[
         str | None,
         Field(
@@ -134,6 +195,21 @@ async def create_application_process(
             description=(
                 "Optional name for the new application process (e.g. 'Restbus_ApplicationProcess'). "
                 "Omit to keep the ConfigurationDesk default name."
+            ),
+        ),
+    ] = None,
+    provide_default_task: Annotated[
+        bool | None,
+        Field(
+            default=None,
+            description=(
+                "Whether the new application process provides a default task. "
+                "true = 'Provide default task' is enabled and ConfigurationDesk creates a periodic "
+                "default task; false = bare application process without a default task. "
+                "Send the value whenever the request or the conversation states it ('with default "
+                "task' → true, 'without default task' → false). "
+                "Omit / null ONLY when it was never stated: the user is then asked, and a default "
+                "task is created if no answer is received."
             ),
         ),
     ] = None,
@@ -149,8 +225,27 @@ async def create_application_process(
             ),
         ),
     ] = None,
+    input: Annotated[
+        CreateApplicationProcessInput | None,
+        Field(
+            default=None,
+            description=(
+                "Compatibility wrapper for hosts that nest arguments. Prefer the top-level "
+                "`name`, `provide_default_task`, and `bus_config_names` arguments; values given "
+                "here are used only when the matching top-level argument is omitted."
+            ),
+        ),
+    ] = None,
 ) -> str:
-    return await svc.create_application_process(name, bus_config_names)
+    if input is not None:
+        name = name if name is not None else input.name
+        if provide_default_task is None:
+            provide_default_task = input.provide_default_task
+        if bus_config_names is None:
+            bus_config_names = input.bus_config_names
+    if provide_default_task is None:
+        provide_default_task = await _resolve_provide_default_task(ctx)
+    return await svc.create_application_process(name, bus_config_names, provide_default_task)
 
 
 @mcp.tool(

@@ -80,6 +80,18 @@ def dispatch_returns() -> dict[str, Any]:
         )
         return {"verified": True, "created_processes": ["AppProcess"], "model_name": model_name}
 
+    def _create_application_process(name=None, bus_config_names=None, provide_default_task=True):
+        process_name = name or "AppProcess"
+        return {
+            "verified": True,
+            "process_name": process_name,
+            "provide_default_task": provide_default_task,
+            "default_task_set": bool(provide_default_task),
+            "default_task_property": "ProvideDefaultTask" if provide_default_task else "",
+            "default_task_name": "Periodic Task 1" if provide_default_task else None,
+            "created_processes": [process_name],
+        }
+
     return {
         # ── application_com / connection ──────────────────────────────────
         "disconnect": True,
@@ -173,14 +185,7 @@ def dispatch_returns() -> dict[str, Any]:
         "replace_model": {"replaced_path": "demo.sic"},
         "remove_model": {"verified": True},
         "analyze_models": {},
-        "create_application_process": {
-            "verified": True,
-            "process_name": "AppProcess",
-            "default_task_set": True,
-            "default_task_property": "ProvideDefaultTask",
-            "default_task_name": "Periodic Task 1",
-            "created_processes": ["AppProcess"],
-        },
+        "create_application_process": _create_application_process,
         "list_models": [
             "CentralGatewayECU_64-bit",
             "EngineAndBodyECUs_64-bit",
