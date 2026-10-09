@@ -9,6 +9,16 @@ import logging
 import os
 from typing import Any, Optional
 
+from configurationdesk_com_bridge.domains._model_hierarchy import (
+    ModelPortBlockRef,
+    ambiguous_hierarchy_error,
+    block_identifier,
+    collect_model_port_blocks,
+    distinct_parent_paths,
+    distinct_paths,
+    match_model_port_blocks,
+    names_at_multiple_levels,
+)
 from configurationdesk_com_bridge.domains._property_helpers import (
     iter_properties,
     normalize_property_name,
@@ -488,46 +498,65 @@ def add_model_to_signal_chain(connection, model_name: str) -> dict[str, Any]:
     return {"model_name": model_name, "scope": "all_port_blocks"}
 
 
+def _model_port_block_not_found(
+    model_name: str, port_block_name: str, refs: list[ModelPortBlockRef]
+) -> dict[str, Any]:
+    return {
+        "error": True,
+        "reason": "model_port_block_not_found",
+        "available_port_blocks": distinct_paths(refs),
+        "detail": (
+            f"Model '{model_name}' does not expose a model port block named '{port_block_name}'."
+        ),
+    }
+
+
 def add_model_port_block_to_signal_chain(
     connection, model_name: str, port_block_name: str
 ) -> dict[str, Any]:
     """Add a single named model port block of a model to the signal chain.
 
-    Sets ``IsInApplication = True`` on the specific model port block
-    identified by *port_block_name* within the model's port block collection.
+    Sets ``IsInApplication = True`` on the model port block addressed by
+    *port_block_name* (a bare name or a hierarchy path). A bare name that
+    matches blocks at several hierarchy levels is rejected as ambiguous.
     """
-    mt = connection.model_topology
-    port_block = mt.Item(model_name).Item(port_block_name)
-    port_block.IsInApplication = True
-    _log.info(
-        "Added model port block '%s' of model '%s' to the signal chain",
-        port_block_name,
-        model_name,
-    )
+    refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
+    matches = match_model_port_blocks(refs, model_name, port_block_name)
+    if not matches:
+        return _model_port_block_not_found(model_name, port_block_name, refs)
+    if len(distinct_parent_paths(matches)) > 1:
+        return ambiguous_hierarchy_error(model_name, port_block_name, matches)
+
+    # Same-level duplicates (e.g. an FMU 'FIR' inport and outport block) are
+    # indistinguishable by name and path, so all of them are added.
+    for ref in matches:
+        ref.block.IsInApplication = True
+    paths = distinct_paths(matches)
+    _log.info("Added model port block(s) %s of model '%s' to the signal chain", paths, model_name)
     return {
         "model_name": model_name,
         "port_block_name": port_block_name,
+        "port_block_path": paths[0],
+        "port_blocks_added": len(matches),
         "scope": "single_port_block",
     }
 
 
-def list_model_port_blocks(connection, model_name: str) -> list[str]:
-    """Return the names of all model port blocks available for *model_name*.
+def list_model_port_blocks(connection, model_name: str) -> list[dict[str, str]]:
+    """Return all model port blocks of *model_name* with their hierarchy paths.
 
-    Iterates over the items directly under the model's root node in the
-    model topology, which correspond to the model port blocks exposed by
-    ConfigurationDesk after model analysis.
+    Recurses into subsystems, so model port blocks nested below the model's
+    root level are included. Each entry carries the block ``name``, its
+    ``path`` (``<model>/<subsystem>/.../<block>``), and the ``identifier`` to
+    pass to other tools: the bare name when it is unique across hierarchy
+    levels, otherwise the full path.
     """
-    mt = connection.model_topology
-    model_block = mt.Item(model_name)
-    port_blocks: list[str] = []
-    for item in model_block:
-        try:
-            port_blocks.append(item.Name)
-        except Exception:
-            _log.warning("Could not enumerate model port blocks for model '%s'", model_name)
-
-    return port_blocks
+    refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
+    ambiguous = names_at_multiple_levels(refs)
+    return [
+        {"name": ref.name, "path": ref.path, "identifier": block_identifier(ref, ambiguous)}
+        for ref in refs
+    ]
 
 
 # Read-only model port properties documented in the ConfigurationDesk User
@@ -569,29 +598,33 @@ def list_model_ports(
     carries the owning block plus the read-only properties ConfigurationDesk
     exposes for a model port.
 
-    Pass *port_block_name* to restrict the result to a single model port block.
+    Pass *port_block_name* (a bare name or a hierarchy path) to restrict the
+    result to the matching model port blocks. A bare name matches blocks at
+    every hierarchy level; each entry's ``port_block_path`` tells them apart.
     """
-    mt = connection.model_topology
-    model_block = mt.Item(model_name)
+    refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
+    if port_block_name:
+        refs_to_scan = match_model_port_blocks(refs, model_name, port_block_name)
+        if not refs_to_scan:
+            return _model_port_block_not_found(model_name, port_block_name, refs)
+    else:
+        refs_to_scan = refs
 
     ports: list[dict[str, Any]] = []
     scanned: list[str] = []
-    for block in model_block:
-        try:
-            block_name = block.Name
-        except Exception:
-            _log.warning("Could not enumerate model port blocks for model '%s'", model_name)
-            continue
-        if port_block_name and block_name != port_block_name:
-            continue
-        scanned.append(block_name)
-        for port in block:
+    for ref in refs_to_scan:
+        scanned.append(ref.path)
+        for port in ref.block:
             try:
-                entry: dict[str, Any] = {"name": port.Name, "port_block_name": block_name}
+                entry: dict[str, Any] = {
+                    "name": port.Name,
+                    "port_block_name": ref.name,
+                    "port_block_path": ref.path,
+                }
             except Exception:
                 _log.warning(
                     "Could not enumerate model ports of block '%s' on model '%s'",
-                    block_name,
+                    ref.path,
                     model_name,
                 )
                 continue

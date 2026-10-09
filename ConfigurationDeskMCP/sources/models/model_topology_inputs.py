@@ -62,7 +62,7 @@ class AddModelPortBlockToSignalChainInput(BaseModel):
         description="Name of the model that contains the target model port block (e.g. 'SineWaves')."
     )
     port_block_name: str = Field(
-        description="Name of the ONE specific model port block to add to the signal chain (e.g. 'Sine_t'). Use list_model_port_blocks to discover valid names."
+        description="Name of the ONE specific model port block to add to the signal chain (e.g. 'Sine_t'), or its hierarchy path when the name exists at several hierarchy levels (e.g. 'SineWaves/Subsystem/Sine_t'; prefix the model name to address a root-level block exactly). Use list_model_port_blocks to discover valid names."
     )
 
 
@@ -78,5 +78,5 @@ class ListModelPortsInput(BaseModel):
     )
     port_block_name: Optional[str] = Field(
         default=None,
-        description="Optional model port block to restrict the listing to (e.g. 'Sine_t'). Omit to list the model ports of every model port block. Use list_model_port_blocks to discover valid names.",
+        description="Optional model port block to restrict the listing to (e.g. 'Sine_t' or the hierarchy path 'SineWaves/Subsystem/Sine_t'). A bare name lists the matching blocks at every hierarchy level. Omit to list the model ports of every model port block. Use list_model_port_blocks to discover valid names.",
     )

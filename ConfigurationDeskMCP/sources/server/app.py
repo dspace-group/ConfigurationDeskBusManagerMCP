@@ -136,6 +136,7 @@ prerequisites.
 - "Assign exact PDU(s)" or "assign exact signal(s)" to a bus config → `assign_matrix_to_bus_config` with a precise `matrix_xpath` (NOT `assign_ecu_to_bus_config`)
 - If the user or use case names exact PDUs or signals, keep that scope literal. Do NOT widen to whole-ECU assignment unless explicitly requested.
 - Ask the user only when the named PDU/signal scope is materially ambiguous across multiple ECUs/clusters or the instructions conflict.
+- Model port blocks can be nested in subsystems, so one name (e.g. `Wavetable`) can exist at several hierarchy levels. If a tool returns `AMBIGUOUS_TARGET` or `list_model_port_blocks` shows the name under `ambiguous_names`, ask the user which hierarchy path they mean — never pick one yourself — then retry with that full path.
 - "Set baud rate" → `set_io_function_block_property` (this is a hardware I/O setting, not bus config)
 - "Set function port property" or "set IsMappable / InitialValue on a port" → `set_function_port_property`
 - Do NOT call `generate_bus_containers` just to inspect, list, or set function-port properties. Function ports are exposed by assigned bus features; use `find_bus_config_elements` and `set_function_port_property` first.

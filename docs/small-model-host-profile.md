@@ -51,7 +51,11 @@ authoritative.
   `list_model_ports` only to inspect port direction, data type, or data width.
 - Use `auto_connect_io_blocks_to_model_port_blocks` for bulk
   name-matched connections. Use `connect_function_block_port_to_model_port`
-  for one explicit function-block/model-port-block pair.
+  for one explicit function-block/model-port-block pair; also pass the
+  model port name when several model port blocks share the same name.
+- Model port blocks can be nested in subsystems. When a block name exists at
+  several hierarchy levels, ask the user which hierarchy path they mean and
+  pass that path; never pick one.
 
 ## Discovery and Validation Rules
 

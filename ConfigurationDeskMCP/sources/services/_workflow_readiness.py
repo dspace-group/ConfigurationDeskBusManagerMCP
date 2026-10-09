@@ -31,7 +31,7 @@ async def require_model_ready(conn, model_name: Optional[str] = None) -> list[st
     return models
 
 
-async def require_model_port_blocks_ready(conn, model_name: str) -> list[str]:
+async def require_model_port_blocks_ready(conn, model_name: str) -> list[dict[str, str]]:
     await require_model_ready(conn, model_name)
     port_blocks = await dispatch_observation(
         model_topology_com.list_model_port_blocks, conn, model_name

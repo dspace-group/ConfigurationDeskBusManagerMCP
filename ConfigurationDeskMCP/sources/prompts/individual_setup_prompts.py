@@ -311,9 +311,14 @@ Call `auto_connect_io_blocks_to_model_port_blocks` to match function
 ports to model ports by name across the project.
 
 ## Step 3 — Connect a specific pair
-1. `list_model_port_blocks` with model_name="{model_name}" for exact names.
+1. `list_model_port_blocks` with model_name="{model_name}" for exact names, and
+   `list_model_ports` for model port names and directions.
 2. `connect_function_block_port_to_model_port` with function_block_name="...",
    function_block_port_name="...", model_name="{model_name}", model_port_block_name="...".
+   Add model_port_name="..." when several model port blocks share the same name.
+   If the block name exists at several hierarchy levels (e.g. at the model root and in a
+   subsystem), ask the user which one is meant and pass its full path, e.g.
+   model_port_block_name="{model_name}/Subsystem/Block".
 
 ## Verify
 Call `check_conflicts` to confirm nothing is left unconnected.
@@ -455,7 +460,9 @@ Call `add_io_function_block` with function_type_name="{function_type}", block_na
 ## Step 3 — Connect it to the model
 - Single pair: `connect_function_block_port_to_model_port` with function_block_name="{block_name}",
   function_block_port_name="Voltage", model_name="{model_name}", model_port_block_name="..."
-  (use `list_model_port_blocks` for the exact model port block name).
+  (use `list_model_port_blocks` for the exact model port block name; add
+  model_port_name="..." from `list_model_ports` when block names are shared; if the
+  name exists at several hierarchy levels, ask the user which path they mean).
 - Bulk by name: `auto_connect_io_blocks_to_model_port_blocks`.
 
 ## Step 4 — Assign hardware resources

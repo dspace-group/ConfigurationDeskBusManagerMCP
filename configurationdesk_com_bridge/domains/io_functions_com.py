@@ -13,6 +13,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from configurationdesk_com_bridge.domains._model_hierarchy import (
+    ambiguous_hierarchy_error,
+    collect_model_port_blocks,
+    distinct_parent_paths,
+    distinct_paths,
+    match_model_port_blocks,
+)
 from configurationdesk_com_bridge.domains.verify_com import wait_for_state
 
 _log = logging.getLogger(__name__)
@@ -246,14 +253,142 @@ def _find_function_block_port(fb, port_name: str):
     return None
 
 
+def _safe_name(obj) -> str | None:
+    try:
+        return obj.Name
+    except Exception:
+        return None
+
+
+def _resolve_model_port(
+    model_block,
+    model_name: str,
+    model_port_block_name: str,
+    model_port_name: str | None,
+) -> tuple[Any, str | None, dict[str, Any] | None]:
+    """Resolve the model port to connect.
+
+    Returns ``(port, port_block_path, error_dict)``. A model port block name
+    that exists at several hierarchy levels is rejected as ambiguous, even if
+    ``model_port_name`` is given, because the caller must decide which block
+    is meant.
+    """
+    refs = collect_model_port_blocks(model_block, model_name)
+    matches = match_model_port_blocks(refs, model_name, model_port_block_name)
+    if not matches:
+        return (
+            None,
+            None,
+            {
+                "error": True,
+                "available_port_blocks": distinct_paths(refs),
+                "detail": (
+                    f"Model port block '{model_port_block_name}' not found on model '{model_name}'."
+                ),
+            },
+        )
+    if len(distinct_parent_paths(matches)) > 1:
+        return None, None, ambiguous_hierarchy_error(model_name, model_port_block_name, matches)
+
+    port_block_path = matches[0].path
+    blocks = [ref.block for ref in matches]
+
+    if model_port_name is None:
+        if len(blocks) == 1:
+            # Preserve the documented behavior: first model port of the block.
+            try:
+                return blocks[0].Item(0), port_block_path, None
+            except Exception as e:
+                return (
+                    None,
+                    None,
+                    {
+                        "error": True,
+                        "detail": (
+                            f"Cannot access port on model port block '{port_block_path}': {e}"
+                        ),
+                    },
+                )
+        available_ports = [
+            name
+            for block in blocks
+            for name in (_safe_name(port) for port in _iter_children(block))
+            if name
+        ]
+        return (
+            None,
+            None,
+            {
+                "error": True,
+                "reason": "ambiguous_model_port_block",
+                "available_model_ports": available_ports,
+                "detail": (
+                    f"Model '{model_name}' has {len(blocks)} model port blocks named "
+                    f"'{model_port_block_name}' at '{port_block_path}'. Specify "
+                    "model_port_name to choose one of its model ports: "
+                    f"{available_ports}."
+                ),
+            },
+        )
+
+    port_matches = []
+    available: list[str] = []
+    for block in blocks:
+        for port in _iter_children(block):
+            name = _safe_name(port)
+            if name:
+                available.append(name)
+            if name == model_port_name:
+                port_matches.append(port)
+
+    if not port_matches:
+        return (
+            None,
+            None,
+            {
+                "error": True,
+                "reason": "model_port_not_found",
+                "available_model_ports": available,
+                "detail": (
+                    f"Model port '{model_port_name}' not found in model port block "
+                    f"'{port_block_path}'. Available model ports: {available}."
+                ),
+            },
+        )
+    if len(port_matches) > 1:
+        return (
+            None,
+            None,
+            {
+                "error": True,
+                "reason": "ambiguous_model_port",
+                "available_model_ports": available,
+                "detail": (
+                    f"Model port '{model_port_name}' exists {len(port_matches)} times in "
+                    f"model port blocks at '{port_block_path}'."
+                ),
+            },
+        )
+    return port_matches[0], port_block_path, None
+
+
 def connect_function_block_port_to_model_port(
     connection,
     function_block_name: str,
     function_block_port_name: str,
     model_name: str,
     model_port_block_name: str,
+    model_port_name: str | None = None,
 ) -> dict[str, Any]:
-    """Connect a single function block port to a single model port block.
+    """Connect a single function block port to a single model port.
+
+    The model port block is resolved from ``model_port_block_name``: a bare
+    name is searched at every hierarchy level of the model (including
+    subsystems) and a hierarchy path such as ``Model/Subsystem/Block``
+    addresses one level exactly. A bare name found at several hierarchy levels
+    is rejected as ambiguous. When ``model_port_name`` is given, that named
+    port is searched in every matching model port block of that level;
+    otherwise the first port of the (unique) model port block is used.
 
     Mirrors the sample::
 
@@ -314,27 +449,12 @@ def connect_function_block_port_to_model_port(
             ),
         }
 
-    model_port_block = _find_child_by_name(model_block, model_port_block_name)
-    if model_port_block is None:
-        return {
-            "error": True,
-            "detail": (
-                f"Model port block '{model_port_block_name}' not found on model '{model_name}'."
-            ),
-        }
-
-    # The model port block exposes the actual connectable port at index 0
-    # (per the user-supplied sample: ``ModelPortBlock.Item(0)``).
-    try:
-        model_port = model_port_block.Item(0)
-    except Exception as e:
-        return {
-            "error": True,
-            "detail": (
-                f"Cannot access port on model port block "
-                f"'{model_name}.{model_port_block_name}': {e}"
-            ),
-        }
+    model_port, port_block_path, port_err = _resolve_model_port(
+        model_block, model_name, model_port_block_name, model_port_name
+    )
+    if port_err is not None:
+        return port_err
+    resolved_port_name = _safe_name(model_port)
 
     # ── Issue the connection ────────────────────────────────────────────────
     try:
@@ -342,10 +462,11 @@ def connect_function_block_port_to_model_port(
     except Exception as e:
         return {
             "error": True,
+            "reason": "connect_failed",
             "detail": (
                 f"ConnectObjects failed for "
                 f"'{function_block_name}.{function_block_port_name}' -> "
-                f"'{model_name}.{model_port_block_name}': {e}"
+                f"'{port_block_path}/{resolved_port_name}': {e}"
             ),
         }
 
@@ -363,5 +484,7 @@ def connect_function_block_port_to_model_port(
         "function_block_port_name": function_block_port_name,
         "model_name": model_name,
         "model_port_block_name": model_port_block_name,
+        "model_port_block_path": port_block_path,
+        "model_port_name": resolved_port_name,
         "verified": verified,
     }
