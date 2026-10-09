@@ -28,7 +28,7 @@ from sources.services import model_topology_service as svc
         "For .sic/.bsc/.fmu files, analysis is skipped since ports are already defined. "
         "For Simulink models, set analyze=true (default) to detect model ports. "
         "WORKFLOW: add_model → analyze_models → create_application_process → "
-        "auto_connect_io_blocks_to_model_port_blocks. "
+        "auto_connect_function_blocks_to_model_port_blocks. "
         "Models provide the simulation behavior (plant model) that processes bus signals."
     ),
     annotations={
@@ -81,7 +81,7 @@ async def remove_model(input: RemoveModelInput) -> str:
     description=(
         "Analyze all Simulink models in the project to detect their input/output ports and interfaces. "
         "Creates model port blocks in the signal chain that can be connected to bus function ports. "
-        "Call after add_model and before auto_connect_io_blocks_to_model_port_blocks. "
+        "Call after add_model and before auto_connect_function_blocks_to_model_port_blocks. "
         "Not needed for .sic/.bsc/.fmu files (already analyzed). May take time for large models."
     ),
     annotations={
@@ -179,11 +179,11 @@ async def list_models() -> str:
         "chain', 'expose model <name> in signal chain', 'enable all model port blocks of <model>'. "
         "WHAT IT DOES: sets IsInApplication=True on EVERY model port block belonging to the named "
         "model, exposing all of them in the logical signal chain so they can later be wired to "
-        "function blocks (e.g. via auto_connect_io_blocks_to_model_port_blocks). A model port block is "
+        "function blocks (e.g. via auto_connect_function_blocks_to_model_port_blocks). A model port block is "
         "the graphical representation of the ConfigurationDesk model interface in the signal chain. "
         "INPUT: model_name only — do NOT pass a port block name. "
         "DOES NOT: add behavior models (use add_model), create connections "
-        "(use auto_connect_io_blocks_to_model_port_blocks), or remove port blocks from the chain. "
+        "(use auto_connect_function_blocks_to_model_port_blocks), or remove port blocks from the chain. "
         "PRECONDITION: the model must already be added (call add_model / analyze_models first)."
     ),
     annotations={
@@ -218,7 +218,7 @@ async def add_model_to_signal_chain(input: AddModelToSignalChainInput) -> str:
         "address one level exactly. AMBIGUITY: if the tool reports that the name exists at several "
         "hierarchy levels, ask the user which path they mean — never pick one yourself. "
         "DOES NOT: add behavior models (use add_model), create connections "
-        "(use auto_connect_io_blocks_to_model_port_blocks), or affect other port blocks of the same model. "
+        "(use auto_connect_function_blocks_to_model_port_blocks), or affect other port blocks of the same model. "
         "PRECONDITION: the model must already be added (call add_model / analyze_models first)."
     ),
     annotations={

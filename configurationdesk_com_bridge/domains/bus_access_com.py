@@ -553,8 +553,8 @@ def assign_hardware_automatically(connection) -> dict[str, Any]:
     }
 
 
-def auto_connect_io_blocks_to_model_port_blocks(connection) -> dict[str, Any]:
-    """Auto-connect I/O function block ports to matching model port blocks.
+def auto_connect_function_blocks_to_model_port_blocks(connection) -> dict[str, Any]:
+    """Auto-connect function block ports to matching model port blocks.
 
      The COM call has the signature::
 
@@ -583,7 +583,7 @@ def auto_connect_io_blocks_to_model_port_blocks(connection) -> dict[str, Any]:
         return {
             "error": True,
             "detail": (
-                "No I/O function blocks found. Create at least one with "
+                "No function blocks found. Create at least one with "
                 "create_io_function_block or add_io_function_block before "
                 "connecting."
             ),
@@ -654,7 +654,7 @@ def auto_connect_io_blocks_to_model_port_blocks(connection) -> dict[str, Any]:
 
 
 def _count_links(connection) -> int:
-    """Count links involving the I/O function block port hierarchy.
+    """Count links involving the function block port hierarchy.
 
     The ``Links`` relation accessor on ``connection.relations``
     does NOT support ``GetTopNodes`` reliably, so this helper walks the

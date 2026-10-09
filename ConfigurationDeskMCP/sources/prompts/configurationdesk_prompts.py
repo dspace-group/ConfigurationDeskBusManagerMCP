@@ -88,7 +88,7 @@ For a model-less restbus process instead, call `create_application_process` — 
 auto-assigns to "{bus_config_name}".
 
 ## Step 7 — Connect the ports
-Call `auto_connect_io_blocks_to_model_port_blocks` to wire matching
+Call `auto_connect_function_blocks_to_model_port_blocks` to wire matching
 function ports to model ports by name.
 
 ## Step 8 — Resolve conflicts

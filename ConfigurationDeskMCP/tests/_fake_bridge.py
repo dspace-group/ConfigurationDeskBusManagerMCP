@@ -269,7 +269,7 @@ def dispatch_returns() -> dict[str, Any]:
             "assigned_function_blocks": ["VoltageOut_FB", "VoltageIn_FB"],
         },
         "create_preconfigured_application_process": _create_preconfigured_application_process,
-        "auto_connect_io_blocks_to_model_port_blocks": {
+        "auto_connect_function_blocks_to_model_port_blocks": {
             "verified": True,
             "function_blocks": ["CAN_Restbus"],
             "links_before": 0,

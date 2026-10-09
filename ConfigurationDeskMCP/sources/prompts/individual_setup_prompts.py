@@ -307,7 +307,7 @@ over the coarse `feature_type` selector. If this fails, re-run
 `generate_bus_containers` as recovery.
 
 ## Step 2 — Auto-connect by name (recommended)
-Call `auto_connect_io_blocks_to_model_port_blocks` to match function
+Call `auto_connect_function_blocks_to_model_port_blocks` to match function
 ports to model ports by name across the project.
 
 ## Step 3 — Connect a specific pair
@@ -463,7 +463,7 @@ Call `add_io_function_block` with function_type_name="{function_type}", block_na
   (use `list_model_port_blocks` for the exact model port block name; add
   model_port_name="..." from `list_model_ports` when block names are shared; if the
   name exists at several hierarchy levels, ask the user which path they mean).
-- Bulk by name: `auto_connect_io_blocks_to_model_port_blocks`.
+- Bulk by name: `auto_connect_function_blocks_to_model_port_blocks`.
 
 ## Step 4 — Assign hardware resources
 Call `assign_hardware_automatically` (all blocks) or `auto_assign_channel_set`

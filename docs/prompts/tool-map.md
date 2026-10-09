@@ -98,7 +98,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | Assign the reviewed channel-set index `0` to `CAN_Body` when a specific physical channel is required. |
 | `auto_assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | With a registered physical platform, automatically choose an eligible channel set for the single function block `CAN_Body`. |
 | `assign_hardware_automatically` | Bus access | Prompt: `assign_bus_hardware` | With the hardware topology reviewed, automatically assign remaining eligible resources to all I/O function blocks. |
-| `auto_connect_io_blocks_to_model_port_blocks` | Bus access | Prompt: `connect_model_port_blocks` | After the model, process, signal-chain port blocks, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
+| `auto_connect_function_blocks_to_model_port_blocks` | Bus access | Prompt: `connect_model_port_blocks` | After the model, process, signal-chain port blocks, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
 | `create_preconfigured_application_process` | Bus access | Prompt: `create_application_process` | Create a model-specific preconfigured application process for `plant_model`; use the generic process tool when no model is named. |
 
 ## Working Views and Build

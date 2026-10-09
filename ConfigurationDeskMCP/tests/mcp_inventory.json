@@ -19,7 +19,7 @@
     "assign_hardware_automatically",
     "assign_matrix_to_bus_config",
     "auto_assign_channel_set",
-    "auto_connect_io_blocks_to_model_port_blocks",
+    "auto_connect_function_blocks_to_model_port_blocks",
     "backup_project",
     "build_application",
     "check_conflicts",

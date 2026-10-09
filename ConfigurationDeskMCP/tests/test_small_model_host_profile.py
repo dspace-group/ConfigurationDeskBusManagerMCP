@@ -48,7 +48,7 @@ _ROUTING_RULES = (
     "`assign_hardware_automatically`",
     "`list_model_port_blocks`",
     "`list_model_ports`",
-    "`auto_connect_io_blocks_to_model_port_blocks`",
+    "`auto_connect_function_blocks_to_model_port_blocks`",
     "`connect_function_block_port_to_model_port`",
     "`list_matrices`",
     "`find_matrix_elements`",

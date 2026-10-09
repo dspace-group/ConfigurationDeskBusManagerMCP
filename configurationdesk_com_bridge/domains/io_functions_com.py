@@ -261,7 +261,7 @@ def _safe_name(obj) -> str | None:
 
 
 def _resolve_model_port(
-    model_block,
+    model,
     model_name: str,
     model_port_block_name: str,
     model_port_name: str | None,
@@ -273,7 +273,7 @@ def _resolve_model_port(
     ``model_port_name`` is given, because the caller must decide which block
     is meant.
     """
-    refs = collect_model_port_blocks(model_block, model_name)
+    refs = collect_model_port_blocks(model, model_name)
     matches = match_model_port_blocks(refs, model_name, model_port_block_name)
     if not matches:
         return (
@@ -439,8 +439,8 @@ def connect_function_block_port_to_model_port(
             "detail": f"Cannot access ModelTopology component: {e}",
         }
 
-    model_block = _find_child_by_name(mt, model_name)
-    if model_block is None:
+    model = _find_child_by_name(mt, model_name)
+    if model is None:
         return {
             "error": True,
             "detail": (
@@ -450,7 +450,7 @@ def connect_function_block_port_to_model_port(
         }
 
     model_port, port_block_path, port_err = _resolve_model_port(
-        model_block, model_name, model_port_block_name, model_port_name
+        model, model_name, model_port_block_name, model_port_name
     )
     if port_err is not None:
         return port_err

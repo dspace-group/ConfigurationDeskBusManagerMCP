@@ -82,7 +82,7 @@ async def list_io_function_block_types(input: ListIoFunctionBlockTypesInput) -> 
         "model port block names and `list_model_ports` for model port names "
         "and directions. "
         "For bulk auto-matching of all bus-configuration function ports to "
-        "model port blocks, use `auto_connect_io_blocks_to_model_port_blocks` instead."
+        "model port blocks, use `auto_connect_function_blocks_to_model_port_blocks` instead."
     ),
     annotations={
         "readOnlyHint": False,

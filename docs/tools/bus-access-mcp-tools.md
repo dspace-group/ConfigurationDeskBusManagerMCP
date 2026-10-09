@@ -18,7 +18,7 @@ connect bus communication to physical hardware channels or model ports.
 | `assign_channel_set` | Assign a channel set by its returned index. | Changes the hardware mapping. |
 | `auto_assign_channel_set` | Choose an eligible channel set automatically. | Requires a registered physical platform. |
 | `assign_hardware_automatically` | Assign remaining eligible hardware resources. | Changes multiple assignments. |
-| `auto_connect_io_blocks_to_model_port_blocks` | Connect matching I/O and model ports by name. | Ensure the model and application process are ready first. |
+| `auto_connect_function_blocks_to_model_port_blocks` | Connect matching I/O and model ports by name. | Ensure the model and application process are ready first. |
 | `create_preconfigured_application_process` | Create a model-specific application process. | Use when the workflow names one behavior model. |
 
 `list_bus_access_requests` accepts `offset` and `limit`; see the shared

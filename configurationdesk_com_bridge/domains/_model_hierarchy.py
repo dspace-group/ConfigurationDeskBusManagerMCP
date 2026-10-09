@@ -94,7 +94,7 @@ def _node_kind(node: Any) -> str:
     return _GROUP
 
 
-def collect_model_port_blocks(model_block: Any, model_name: str) -> list[ModelPortBlockRef]:
+def collect_model_port_blocks(model: Any, model_name: str) -> list[ModelPortBlockRef]:
     """Return every model port block of a model, recursing into subsystems."""
     refs: list[ModelPortBlockRef] = []
 
@@ -110,7 +110,7 @@ def collect_model_port_blocks(model_block: Any, model_name: str) -> list[ModelPo
             elif kind == _GROUP:
                 walk(child, path)
 
-    walk(model_block, model_name)
+    walk(model, model_name)
     return refs
 
 

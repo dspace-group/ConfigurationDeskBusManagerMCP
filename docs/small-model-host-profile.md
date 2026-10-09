@@ -49,7 +49,7 @@ authoritative.
   `assign_hardware_automatically` for all eligible function blocks.
 - Use `list_model_port_blocks` to get block names required by other tools. Use
   `list_model_ports` only to inspect port direction, data type, or data width.
-- Use `auto_connect_io_blocks_to_model_port_blocks` for bulk
+- Use `auto_connect_function_blocks_to_model_port_blocks` for bulk
   name-matched connections. Use `connect_function_block_port_to_model_port`
   for one explicit function-block/model-port-block pair; also pass the
   model port name when several model port blocks share the same name.

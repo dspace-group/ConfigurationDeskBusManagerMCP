@@ -38,7 +38,7 @@ ConfigurationDesk provides a COM-based automation API for HIL (Hardware-in-the-L
 9. **Create Application Process** — Use `create_application_process` (creates an application process providing a default periodic task; pass `bus_config_names` to also assign it to bus configurations) or `create_preconfigured_application_process` (model-driven)
 10. **Configure Function Ports** — Use `set_function_port_property` for IsMappable etc.
 10b. **Configure Feature/Matrix Properties** — Use `set_bus_config_element_property` for feature nodes like 'Countdown start value' or 'Overwrite value', and `set_matrix_element_property` for matrix properties like PDU/signal 'Length' or 'Initial value'.
-11. **Connect Ports** — Use `auto_connect_io_blocks_to_model_port_blocks` for automatic name-based matching
+11. **Connect Ports** — Use `auto_connect_function_blocks_to_model_port_blocks` for automatic name-based matching
 12. **Add Hardware** — Use `add_hardware_platform` to register supported hardware systems
 13. **Bus Access Assignment** — Complete workflow:
     a. Create I/O function block: `create_io_function_block` (CAN/LIN/Ethernet)
@@ -77,7 +77,7 @@ all hardware assignments at once (steps 4-5).
 The Algorithms API provides powerful automation methods:
 - `assign_channel_set` / `auto_assign_channel_set` — Hardware channel assignment
 - `assign_hardware_automatically` — Auto-assign all hardware at once
-- `auto_connect_io_blocks_to_model_port_blocks` — Auto-wire I/O to model port blocks
+- `auto_connect_function_blocks_to_model_port_blocks` — Auto-wire I/O to model port blocks
 - `create_preconfigured_application_process` — Auto-create application process for a specific behavior model
 - `check_conflicts` — Export and parse all configuration conflicts
 
@@ -159,7 +159,7 @@ _TOOL_CATEGORIES = """\
 - `assign_channel_set` — Assign a specific channel set to a function block
 - `auto_assign_channel_set` — Auto-assign channel set to a function block
 - `assign_hardware_automatically` — Auto-assign all hardware to all function blocks
-- `auto_connect_io_blocks_to_model_port_blocks` — Auto-wire I/O function blocks to model port blocks
+- `auto_connect_function_blocks_to_model_port_blocks` — Auto-wire I/O function blocks to model port blocks
 - `create_preconfigured_application_process` — Auto-create application process for one model
 """
 

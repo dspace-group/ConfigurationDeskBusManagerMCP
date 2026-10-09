@@ -492,8 +492,8 @@ def add_model_to_signal_chain(connection, model_name: str) -> dict[str, Any]:
     block of that model in the signal chain.
     """
     mt = connection.model_topology
-    model_block = mt.Item(model_name)
-    model_block.IsInApplication = True
+    model = mt.Item(model_name)
+    model.IsInApplication = True
     _log.info("Added all model port blocks of model '%s' to the signal chain", model_name)
     return {"model_name": model_name, "scope": "all_port_blocks"}
 

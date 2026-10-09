@@ -359,11 +359,11 @@ async def assign_hardware_automatically() -> str:
 
 
 @mcp.tool(
-    name="auto_connect_io_blocks_to_model_port_blocks",
+    name="auto_connect_function_blocks_to_model_port_blocks",
     description=(
-        "Automatically connect I/O function block ports to model port blocks by name matching. "
+        "Automatically connect function block ports to model port blocks by name matching. "
         "Calls Algorithms.ConnectIOFunctionBlocksToModelPortBlocks(items) where items are the "
-        "bus I/O function blocks present in the project. "
+        "bus function blocks present in the project. "
         "Call AFTER: add_model, create_application_process, and ensuring the model port blocks are "
         "in the signal chain (add_model_to_signal_chain or add_model_port_block_to_signal_chain). "
         "Do NOT treat generate_bus_containers as a prerequisite for this tool; only generate "
@@ -377,8 +377,8 @@ async def assign_hardware_automatically() -> str:
     },
 )
 @with_preconditions("connection", "project", "application", "model", "application_process")
-async def auto_connect_io_blocks_to_model_port_blocks() -> str:
-    return await svc.auto_connect_io_blocks_to_model_port_blocks()
+async def auto_connect_function_blocks_to_model_port_blocks() -> str:
+    return await svc.auto_connect_function_blocks_to_model_port_blocks()
 
 
 @mcp.tool(
