@@ -321,13 +321,13 @@ async def assign_hardware_automatically() -> str:
         return error_response(str(e), transient=False)
 
 
-async def auto_connect_matching_io_function_blocks_to_model_ports() -> str:
+async def auto_connect_function_blocks_to_model_port_blocks() -> str:
     try:
         conn = get_connection()
         await require_model_ready(conn)
         await require_application_process_ready(conn)
         result = await dispatch(
-            bus_access_com.auto_connect_matching_io_function_blocks_to_model_ports,
+            bus_access_com.auto_connect_function_blocks_to_model_port_blocks,
             conn,
         )
         if result.get("error"):
@@ -336,16 +336,16 @@ async def auto_connect_matching_io_function_blocks_to_model_ports() -> str:
                 transient=False,
                 next_action=(
                     "Auto-connect failed. "
-                    "Ensure: 1) at least one I/O function block exists (create_io_function_block), "
+                    "Ensure: 1) at least one function block exists (create_io_function_block), "
                     "2) a model is added and analyzed, "
-                    "3) the matching model ports are in the signal chain "
-                    "(add_model_to_signal_chain or add_model_port_to_signal_chain). "
+                    "3) the matching model port blocks are in the signal chain "
+                    "(add_model_to_signal_chain or add_model_port_block_to_signal_chain). "
                     "Do NOT retry with the same parameters."
                 ),
             )
         if result.get("verified"):
             return success_response(
-                message="Matching I/O function block ports connected to model ports",
+                message="Matching function block ports connected to model ports",
                 verified=True,
                 function_blocks=result.get("function_blocks"),
                 links_before=result.get("links_before"),
@@ -359,19 +359,15 @@ async def auto_connect_matching_io_function_blocks_to_model_ports() -> str:
             ),
             transient=False,
             next_action=(
-                "Verify that the I/O function block port names match the model port names, "
+                "Verify that the function block port names match the model port names, "
                 "or connect ports manually in ConfigurationDesk."
             ),
         )
     except BridgeError as exc:
         return tool_error_result(exc)
     except Exception as e:
-        logger.exception("Error auto-connecting IO function blocks to model ports")
+        logger.exception("Error auto-connecting function blocks to model port blocks")
         return error_response(str(e), transient=False)
-
-
-# Backwards compatibility alias.
-connect_io_function_blocks_to_model_ports = auto_connect_matching_io_function_blocks_to_model_ports
 
 
 async def create_preconfigured_application_process(model_name: str) -> str:

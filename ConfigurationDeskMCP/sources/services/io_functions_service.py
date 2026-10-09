@@ -8,6 +8,7 @@ from configurationdesk_com_bridge.domains import io_functions_com
 from configurationdesk_com_bridge.errors import BridgeError
 
 from sources.models.envelope_builder import tool_error_result
+from sources.services._model_port_blocks import ambiguous_model_port_block_response
 from sources.services._observations import dispatch_observation
 from sources.tools._responses import error_response, success_response, unverified_response
 from sources.utils.logger import get_logger
@@ -81,7 +82,8 @@ async def connect_function_block_port_to_model_port(
     function_block_name: str,
     function_block_port_name: str,
     model_name: str,
-    model_port_name: str,
+    model_port_block_name: str,
+    model_port_name: str | None = None,
 ) -> str:
     try:
         conn = get_connection()
@@ -91,11 +93,40 @@ async def connect_function_block_port_to_model_port(
             function_block_name,
             function_block_port_name,
             model_name,
+            model_port_block_name,
             model_port_name,
         )
         if result.get("error"):
             detail = result["detail"]
             low = detail.lower()
+            reason = result.get("reason")
+            if reason == "ambiguous_model_port_block_hierarchy":
+                return ambiguous_model_port_block_response(detail, result.get("candidates", []))
+            if reason in {
+                "ambiguous_model_port_block",
+                "model_port_not_found",
+                "ambiguous_model_port",
+            }:
+                return error_response(
+                    detail,
+                    transient=False,
+                    next_action=(
+                        "Retry with `model_port_name` set to one of the available model "
+                        f"ports {result.get('available_model_ports', [])}. Call "
+                        "`list_model_ports` to check each port's direction."
+                    ),
+                )
+            if reason == "connect_failed":
+                return error_response(
+                    detail,
+                    transient=False,
+                    next_action=(
+                        "Check the port directions with `list_model_ports`: output "
+                        "function blocks (e.g. 'Voltage Out') must be connected to a "
+                        "model outport and input function blocks (e.g. 'Voltage In') to "
+                        "a model inport. Pass `model_port_name` to select the port."
+                    ),
+                )
             if "function block" in low and "not found" in low:
                 return error_response(
                     detail,
@@ -112,8 +143,8 @@ async def connect_function_block_port_to_model_port(
                     detail,
                     transient=False,
                     next_action=(
-                        "Call `list_model_ports` with the given model_name to "
-                        "discover valid model port names."
+                        "Call `list_model_port_blocks` with the given model_name to "
+                        "discover valid model port block names."
                     ),
                 )
             if "model '" in low and "not found" in low:
@@ -124,10 +155,12 @@ async def connect_function_block_port_to_model_port(
                 )
             return error_response(detail, transient=False)
 
-        message = (
-            f"Connected '{function_block_name}.{function_block_port_name}' "
-            f"to '{model_name}.{model_port_name}'"
-        )
+        resolved_port_name = result.get("model_port_name") or model_port_name
+        port_block_path = result.get("model_port_block_path")
+        target = port_block_path or f"{model_name}/{model_port_block_name}"
+        if resolved_port_name:
+            target += f"/{resolved_port_name}"
+        message = f"Connected '{function_block_name}.{function_block_port_name}' to '{target}'"
         if result.get("verified"):
             return success_response(
                 message=message,
@@ -135,14 +168,18 @@ async def connect_function_block_port_to_model_port(
                 function_block_name=function_block_name,
                 function_block_port_name=function_block_port_name,
                 model_name=model_name,
-                model_port_name=model_port_name,
+                model_port_block_name=model_port_block_name,
+                model_port_block_path=port_block_path,
+                model_port_name=resolved_port_name,
             )
         return unverified_response(
             message=message + " (issued but could not verify Links)",
             function_block_name=function_block_name,
             function_block_port_name=function_block_port_name,
             model_name=model_name,
-            model_port_name=model_port_name,
+            model_port_block_name=model_port_block_name,
+            model_port_block_path=port_block_path,
+            model_port_name=resolved_port_name,
         )
     except BridgeError as exc:
         return tool_error_result(exc)

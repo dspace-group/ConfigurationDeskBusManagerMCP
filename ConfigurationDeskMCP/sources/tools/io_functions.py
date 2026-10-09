@@ -61,17 +61,28 @@ async def list_io_function_block_types(input: ListIoFunctionBlockTypesInput) -> 
 @mcp.tool(
     name="connect_function_block_port_to_model_port",
     description=(
-        "[SIGNAL CHAIN] Connect a single named port of a function block "
-        "instance to a single named model port block in the signal chain. "
+        "[SIGNAL CHAIN] Connect (map) a single named port of a function block "
+        "instance to a model port of a named model port block in the signal "
+        "chain. By default the first model port of the block is used; pass "
+        "`model_port_name` (e.g. 'Output') to select a specific model port, "
+        "which is required when several model port blocks share the same name "
+        "at the same hierarchy level. Model port blocks can be nested in "
+        "subsystems: if the block name exists at several hierarchy levels the "
+        "tool refuses to guess — ask the user which block they mean, then pass "
+        "its full hierarchy path (e.g. 'MyModel/Subsystem/Wavetable') as "
+        "`model_port_block_name`. "
+        "Output function blocks (e.g. 'Voltage Out') connect to model outports; "
+        "input function blocks (e.g. 'Voltage In') connect to model inports. "
         "Use this for fine-grained, one-pair connections (e.g. connect "
         "function block 'Voltage Out' port 'Voltage' to model 'SineWaves' "
-        "port 'Sine_t'). "
+        "model port block 'Sine_t'). "
         "Prerequisites: the function block must already exist (see "
         "`add_io_function_block`) and the model must already be added "
-        "(see `add_model`); use `list_model_ports` to discover valid "
-        "model port names. "
+        "(see `add_model`); use `list_model_port_blocks` to discover valid "
+        "model port block names and `list_model_ports` for model port names "
+        "and directions. "
         "For bulk auto-matching of all bus-configuration function ports to "
-        "model ports, use `auto_connect_matching_io_function_blocks_to_model_ports` instead."
+        "model port blocks, use `auto_connect_function_blocks_to_model_port_blocks` instead."
     ),
     annotations={
         "readOnlyHint": False,
@@ -87,5 +98,6 @@ async def connect_function_block_port_to_model_port(
         input.function_block_name,
         input.function_block_port_name,
         input.model_name,
+        input.model_port_block_name,
         input.model_port_name,
     )

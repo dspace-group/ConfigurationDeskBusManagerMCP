@@ -10,9 +10,10 @@ from configurationdesk_com_bridge.domains import model_topology_com
 from configurationdesk_com_bridge.errors import BridgeError
 
 from sources.models.envelope_builder import tool_error_result
+from sources.services._model_port_blocks import ambiguous_model_port_block_response
 from sources.services._observations import dispatch_observation
 from sources.services._workflow_readiness import (
-    require_model_ports_ready,
+    require_model_port_blocks_ready,
     require_model_ready,
 )
 from sources.tools._responses import error_response, success_response, unverified_response
@@ -177,7 +178,7 @@ async def add_model_to_signal_chain(model_name: str) -> str:
         await require_model_ready(conn, model_name)
         result = await dispatch(model_topology_com.add_model_to_signal_chain, conn, model_name)
         return success_response(
-            message=f"All ports of model '{model_name}' added to the signal chain",
+            message=f"All model port blocks of model '{model_name}' added to the signal chain",
             verified=True,
             **result,
         )
@@ -188,39 +189,88 @@ async def add_model_to_signal_chain(model_name: str) -> str:
         return error_response(str(e), transient=False)
 
 
-async def add_model_port_to_signal_chain(model_name: str, port_name: str) -> str:
+async def add_model_port_block_to_signal_chain(model_name: str, port_block_name: str) -> str:
     try:
         conn = get_connection()
-        ports = await require_model_ports_ready(conn, model_name)
-        if port_name not in ports:
-            return error_response(
-                f"Model '{model_name}' does not expose a port named '{port_name}'.",
-                transient=False,
-                next_action="Call `list_model_ports` first and use one of the returned port names.",
-            )
+        await require_model_port_blocks_ready(conn, model_name)
         result = await dispatch(
-            model_topology_com.add_model_port_to_signal_chain, conn, model_name, port_name
+            model_topology_com.add_model_port_block_to_signal_chain,
+            conn,
+            model_name,
+            port_block_name,
         )
+        if result.get("error"):
+            return _port_block_error_response(result)
+        path = result.get("port_block_path") or port_block_name
         return success_response(
-            message=f"Port '{port_name}' of model '{model_name}' added to the signal chain",
+            message=f"Model port block '{path}' of model '{model_name}' added to the signal chain",
             verified=True,
             **result,
         )
     except BridgeError as exc:
         return tool_error_result(exc)
     except Exception as e:
-        logger.exception("Error adding model port to signal chain")
+        logger.exception("Error adding model port block to signal chain")
         return error_response(str(e), transient=False)
 
 
-async def list_model_ports(model_name: str) -> str:
+async def list_model_port_blocks(model_name: str) -> str:
     try:
         conn = get_connection()
         await require_model_ready(conn, model_name)
-        ports = await dispatch_observation(model_topology_com.list_model_ports, conn, model_name)
-        return success_response(model_name=model_name, ports=ports, count=len(ports))
+        blocks = await dispatch_observation(
+            model_topology_com.list_model_port_blocks, conn, model_name
+        )
+        ambiguous: dict[str, list[str]] = {}
+        for block in blocks:
+            if block["identifier"] != block["name"]:
+                ambiguous.setdefault(block["name"], []).append(block["path"])
+        payload: dict = {
+            "model_name": model_name,
+            "port_blocks": [block["identifier"] for block in blocks],
+            "port_block_paths": [block["path"] for block in blocks],
+            "count": len(blocks),
+        }
+        if ambiguous:
+            payload["ambiguous_names"] = ambiguous
+            payload["note"] = (
+                "Some model port block names occur at several hierarchy levels. If the user "
+                "refers to one of these by name only, ask the user which path they mean "
+                "before using it in another tool."
+            )
+        return success_response(**payload)
+    except BridgeError as exc:
+        return tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error listing model port blocks")
+        return error_response(str(e), transient=False)
+
+
+async def list_model_ports(model_name: str, port_block_name: Optional[str] = None) -> str:
+    try:
+        conn = get_connection()
+        await require_model_port_blocks_ready(conn, model_name)
+        result = await dispatch_observation(
+            model_topology_com.list_model_ports, conn, model_name, port_block_name
+        )
+        if result.get("error"):
+            return _port_block_error_response(result)
+        return success_response(**result)
     except BridgeError as exc:
         return tool_error_result(exc)
     except Exception as e:
         logger.exception("Error listing model ports")
         return error_response(str(e), transient=False)
+
+
+def _port_block_error_response(result: dict) -> str:
+    if result.get("reason") == "ambiguous_model_port_block_hierarchy":
+        return ambiguous_model_port_block_response(result["detail"], result.get("candidates", []))
+    return error_response(
+        result["detail"],
+        transient=False,
+        next_action=(
+            "Call `list_model_port_blocks` first and use one of the returned names. "
+            f"Available model port blocks: {result.get('available_port_blocks', [])}."
+        ),
+    )

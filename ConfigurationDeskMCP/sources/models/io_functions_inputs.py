@@ -42,9 +42,24 @@ class ConnectFunctionBlockPortToModelPortInput(BaseModel):
             "`add_model`."
         )
     )
-    model_port_name: str = Field(
+    model_port_block_name: str = Field(
         description=(
-            "Name of the model port block on the model, e.g. 'Sine_t'. "
-            "Use `list_model_ports` to discover valid values."
+            "Name of the model port block on the model, e.g. 'Sine_t', or its "
+            "hierarchy path when the block sits in a subsystem or the name "
+            "exists at several hierarchy levels, e.g. 'SineWaves/Subsystem/Sine_t' "
+            "(prefix the model name to address a root-level block exactly, e.g. "
+            "'SineWaves/Sine_t'). Use `list_model_port_blocks` to discover valid values."
         )
+    )
+    model_port_name: str | None = Field(
+        default=None,
+        description=(
+            "Optional name of the model port inside the model port block, "
+            "e.g. 'Output'. Required when several model port blocks at the "
+            "same hierarchy level share model_port_block_name (e.g. 'FIR' "
+            "inport and 'FIR' outport blocks). Does not resolve blocks that "
+            "share a name across hierarchy levels — use the block path for "
+            "that. Omit to use the first model port of the block. Use "
+            "`list_model_ports` to discover names and directions."
+        ),
     )

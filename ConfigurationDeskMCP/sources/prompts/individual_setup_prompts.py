@@ -235,11 +235,11 @@ Skip for .sic/.bsc/.fmu (already analyzed).
 
 ## Step 3 — Inspect
 - `list_models` — confirm the model and its model analysis state.
-- `list_model_ports` with model_name="{model_name}" — the available model ports.
+- `list_model_port_blocks` with model_name="{model_name}" — the available model port blocks.
 
-## Step 4 — Expose ports in the signal chain
-- All ports → `add_model_to_signal_chain` with model_name="{model_name}".
-- One port → `add_model_port_to_signal_chain` with model_name="{model_name}" and the exact port_name.
+## Step 4 — Expose model port blocks in the signal chain
+- All port blocks → `add_model_to_signal_chain` with model_name="{model_name}".
+- One port block → `add_model_port_block_to_signal_chain` with model_name="{model_name}" and the exact port_block_name.
 """
 
 
@@ -280,23 +280,23 @@ For a process pre-configured for ONE behavior model, call
 
 
 @mcp.prompt(
-    name="connect_model_ports",
-    description="Single task: wire bus/I/O function ports to behavior-model ports (automatic name matching or a specific pair)",
+    name="connect_model_port_blocks",
+    description="Single task: wire bus/I/O function ports to behavior-model port blocks (automatic name matching or a specific pair)",
 )
-def connect_model_ports(
+def connect_model_port_blocks(
     model_name: str = "plant_model",
     bus_config_name: str = "CAN_Restbus",
 ) -> str:
     return f"""\
-# Connect Model Ports
+# Connect Model Port Blocks
 
 Goal: establish the data flow between function ports (bus or analog/digital I/O)
-and the behavior model's ports in the signal chain.
+and the behavior model's port blocks in the signal chain.
 
 {_ENSURE_RUNNING}
 
 ## Prerequisite
-- The model's ports are in the signal chain (see `add_behavior_model`).
+- The model's port blocks are in the signal chain (see `add_behavior_model`).
 - Function blocks/ports exist (bus features or I/O function blocks).
 - An application process exists (see `create_application_process`).
 
@@ -308,13 +308,18 @@ over the coarse `feature_type` selector. If this fails, re-run
 `generate_bus_containers` as recovery.
 
 ## Step 2 — Auto-connect by name (recommended)
-Call `auto_connect_matching_io_function_blocks_to_model_ports` to match function
+Call `auto_connect_function_blocks_to_model_port_blocks` to match function
 ports to model ports by name across the project.
 
 ## Step 3 — Connect a specific pair
-1. `list_model_ports` with model_name="{model_name}" for exact names.
+1. `list_model_port_blocks` with model_name="{model_name}" for exact names, and
+   `list_model_ports` for model port names and directions.
 2. `connect_function_block_port_to_model_port` with function_block_name="...",
-   function_block_port_name="...", model_name="{model_name}", model_port_name="...".
+   function_block_port_name="...", model_name="{model_name}", model_port_block_name="...".
+   Add model_port_name="..." when several model port blocks share the same name.
+   If the block name exists at several hierarchy levels (e.g. at the model root and in a
+   subsystem), ask the user which one is meant and pass its full path, e.g.
+   model_port_block_name="{model_name}/Subsystem/Block".
 
 ## Verify
 Call `check_conflicts` to confirm nothing is left unconnected.
@@ -455,9 +460,11 @@ Call `add_io_function_block` with function_type_name="{function_type}", block_na
 
 ## Step 3 — Connect it to the model
 - Single pair: `connect_function_block_port_to_model_port` with function_block_name="{block_name}",
-  function_block_port_name="Voltage", model_name="{model_name}", model_port_name="..."
-  (use `list_model_ports` for the exact model port name).
-- Bulk by name: `auto_connect_matching_io_function_blocks_to_model_ports`.
+  function_block_port_name="Voltage", model_name="{model_name}", model_port_block_name="..."
+  (use `list_model_port_blocks` for the exact model port block name; add
+  model_port_name="..." from `list_model_ports` when block names are shared; if the
+  name exists at several hierarchy levels, ask the user which path they mean).
+- Bulk by name: `auto_connect_function_blocks_to_model_port_blocks`.
 
 ## Step 4 — Assign hardware resources
 Call `assign_hardware_automatically` (all blocks) or `auto_assign_channel_set`

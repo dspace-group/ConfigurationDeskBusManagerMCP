@@ -69,12 +69,13 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `analyze_models` | Model topology | Prompt: `add_behavior_model` | Analyze loaded Simulink models before exposing or connecting their ports; skip this for already analyzed SIC, BSC, or FMU files. |
 | `create_application_process` | Model topology | Prompt: `create_application_process` | To work without a behavior model, create application process RestbusProcess with a default task and assign only `CAN_Restbus` to it.  |
 | `list_models` | Model topology | Prompt: `add_behavior_model` | List loaded models and their file paths before selecting one for a process, port exposure, replacement, or removal. |
-| `add_model_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | Expose every port of model `plant_model` in the signal chain; use this only when all of its ports are intended. |
-| `add_model_port_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | List ports for `plant_model`, then expose only its named port `EngineSpeed` in the signal chain. |
-| `list_model_ports` | Model topology | Prompt: `connect_model_ports` | List exact available port names for `plant_model` before exposing one port or creating an explicit connection. |
+| `add_model_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | Expose every model port block of model `plant_model` in the signal chain; use this only when all of them are intended. |
+| `add_model_port_block_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | List model port blocks for `plant_model`, then expose only its named block `EngineSpeed` in the signal chain. |
+| `list_model_port_blocks` | Model topology | Prompt: `connect_model_port_blocks` | List exact available model port block names for `plant_model` before exposing one or creating an explicit connection. |
+| `list_model_ports` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | Show the individual model ports inside `plant_model` with their direction, data type, and data width; scope it to one block when named. |
 | `list_io_function_block_types` | I/O functions | Prompt: `add_io_function` | List available analog and digital I/O function block types before choosing one for `ThrottleCommand`. |
 | `add_io_function_block` | I/O functions | Prompt: `add_io_function` | Add analog I/O function `Voltage Out` named `ThrottleCommand`; do not use this for a CAN, LIN, or Ethernet bus channel. |
-| `connect_function_block_port_to_model_port` | I/O functions | Prompt: `connect_model_ports` | After both endpoints exist, connect `Voltage Out` port `Voltage` to the exact model port `Throttle`. |
+| `connect_function_block_port_to_model_port` | I/O functions | Prompt: `connect_model_port_blocks` | After both endpoints exist, connect `Voltage Out` port `Voltage` to the exact model port block `Throttle`. |
 
 ## Hardware and Bus Access
 
@@ -97,7 +98,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | Assign the reviewed channel-set index `0` to `CAN_Body` when a specific physical channel is required. |
 | `auto_assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | With a registered physical platform, automatically choose an eligible channel set for the single function block `CAN_Body`. |
 | `assign_hardware_automatically` | Bus access | Prompt: `assign_bus_hardware` | With the hardware topology reviewed, automatically assign remaining eligible resources to all I/O function blocks. |
-| `auto_connect_matching_io_function_blocks_to_model_ports` | Bus access | Prompt: `connect_model_ports` | After the model, process, signal-chain ports, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
+| `auto_connect_function_blocks_to_model_port_blocks` | Bus access | Prompt: `connect_model_port_blocks` | After the model, process, signal-chain port blocks, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
 | `create_preconfigured_application_process` | Bus access | Prompt: `create_application_process` | Create a model-specific preconfigured application process for `plant_model`; use the generic process tool when no model is named. |
 
 ## Working Views and Build

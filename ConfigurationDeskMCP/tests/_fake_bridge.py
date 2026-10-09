@@ -186,9 +186,49 @@ def dispatch_returns() -> dict[str, Any]:
             "EngineAndBodyECUs_64-bit",
             "demosmd_io",
         ],
-        "add_model_to_signal_chain": {"ports_added": 2},
-        "add_model_port_to_signal_chain": {"port_added": "In1"},
-        "list_model_ports": ["In1", "Out1"],
+        "add_model_to_signal_chain": {"port_blocks_added": 2},
+        "add_model_port_block_to_signal_chain": {
+            "port_block_name": "In1",
+            "port_block_path": "demosmd_io/In1",
+            "port_blocks_added": 1,
+        },
+        "list_model_port_blocks": [
+            {"name": "In1", "path": "demosmd_io/In1", "identifier": "In1"},
+            {"name": "Out1", "path": "demosmd_io/Out1", "identifier": "Out1"},
+        ],
+        "list_model_ports": lambda model_name=None, port_block_name=None: (
+            {
+                "error": True,
+                "reason": "model_port_block_not_found",
+                "available_port_blocks": ["demosmd_io/In1", "demosmd_io/Out1"],
+                "detail": (
+                    f"Model '{model_name}' does not expose a model port block named "
+                    f"'{port_block_name}'."
+                ),
+            }
+            if port_block_name and port_block_name not in ("In1", "Out1")
+            else {
+                "model_name": model_name,
+                "port_blocks_scanned": [port_block_name] if port_block_name else ["In1", "Out1"],
+                "ports": [
+                    {
+                        "name": "In1",
+                        "port_block_name": "In1",
+                        "port_type": "In",
+                        "data_type": "Float64",
+                        "data_width": 1,
+                    },
+                    {
+                        "name": "Out1",
+                        "port_block_name": "Out1",
+                        "port_type": "Out",
+                        "data_type": "Float64",
+                        "data_width": 1,
+                    },
+                ],
+                "count": 2,
+            }
+        ),
         "list_application_process_names": ["AppProcess"],
         # ── hardware_com ──────────────────────────────────────────────────
         "add_hardware_platform": {
@@ -229,7 +269,7 @@ def dispatch_returns() -> dict[str, Any]:
             "assigned_function_blocks": ["VoltageOut_FB", "VoltageIn_FB"],
         },
         "create_preconfigured_application_process": _create_preconfigured_application_process,
-        "auto_connect_matching_io_function_blocks_to_model_ports": {
+        "auto_connect_function_blocks_to_model_port_blocks": {
             "verified": True,
             "function_blocks": ["CAN_Restbus"],
             "links_before": 0,
