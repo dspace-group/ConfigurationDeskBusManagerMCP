@@ -181,6 +181,8 @@ def test_create_application_process_can_run_without_model(monkeypatch):
 
     async def fake_dispatch(fn, passed_conn, *args, **kwargs):
         assert passed_conn is conn
+        if fn is model_topology_com.list_processing_unit_application_names:
+            return ["ProcessingUnitApplication"]
         if fn is model_topology_com.create_application_process:
             return {
                 "verified": True,
@@ -242,26 +244,36 @@ def test_nested_input_default_task_is_used_without_eliciting(monkeypatch, stated
 
     captured = {}
 
-    async def fake_create(name, bus_config_names, provide_default_task):
+    async def fake_create(
+        name, bus_config_names, provide_default_task, processing_unit_application
+    ):
         captured["provide_default_task"] = provide_default_task
         captured["name"] = name
+        captured["processing_unit_application"] = processing_unit_application
         return "{}"
 
     async def fail_elicit(ctx):
         raise AssertionError("user must not be asked when the value was supplied")
 
+    async def fail_select(choose):
+        raise AssertionError("processing unit application was supplied")
+
     monkeypatch.setattr(tools.svc, "create_application_process", fake_create)
+    monkeypatch.setattr(tools.svc, "select_processing_unit_application", fail_select)
     monkeypatch.setattr(tools, "_resolve_provide_default_task", fail_elicit)
 
     asyncio.run(
         tools.create_application_process.__wrapped__(
             ctx=None,
-            input=CreateApplicationProcessInput(name="Apdf", provide_default_task=stated),
+            input=CreateApplicationProcessInput(
+                name="Apdf", provide_default_task=stated, processing_unit_application="PUA_2"
+            ),
         )
     )
 
     assert captured["provide_default_task"] is stated
     assert captured["name"] == "Apdf"
+    assert captured["processing_unit_application"] == "PUA_2"
 
 
 def test_auto_connect_io_function_blocks_requires_application_process(monkeypatch):

@@ -258,9 +258,11 @@ Goal: provide execution scheduling — mirrors the UI commands
 
 {_ENSURE_RUNNING}
 
-## Prerequisite
-A ProcessingUnitApplication is mandatory regardless of the target (real-time
-hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
+## Processing unit application
+The application process is created on a processing unit application of the
+executable application. Pass `processing_unit_application` when the user names
+one. Otherwise: if none exists, one is created and used; if exactly one exists,
+it is used; if several exist, the user is asked which one to use.
 
 ## Step 1 — Create the application process
 Call `create_application_process` with name="{process_name}".

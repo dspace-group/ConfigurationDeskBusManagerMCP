@@ -4,7 +4,7 @@
 from typing import Annotated
 
 from mcp.server.fastmcp import Context
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 
 from sources.models.model_topology_inputs import (
     AddModelInput,
@@ -61,6 +61,44 @@ async def _resolve_provide_default_task(ctx: Context | None) -> bool:
     if result.action == "accept":
         return result.data.provide_default_task
     return _DEFAULT_TASK_FALLBACK
+
+
+def _processing_unit_application_choice_schema(names: list[str]) -> type[BaseModel]:
+    """Build the elicitation schema offering the existing processing unit applications."""
+    return create_model(
+        "ProcessingUnitApplicationChoice",
+        processing_unit_application=(
+            str,
+            Field(
+                default=names[0],
+                description="Processing unit application that hosts the new application process.",
+                json_schema_extra={"enum": list(names)},
+            ),
+        ),
+    )
+
+
+async def _choose_processing_unit_application(ctx: Context | None, names: list[str]) -> str | None:
+    """Ask the user which processing unit application hosts the new application process.
+
+    Returns ``None`` when the client cannot elicit or the user declines/cancels.
+    """
+    if ctx is None:
+        return None
+    try:
+        result = await ctx.elicit(
+            message=(
+                "The executable application contains several processing unit applications "
+                f"({', '.join(names)}). On which processing unit application should the new "
+                "application process be created?"
+            ),
+            schema=_processing_unit_application_choice_schema(names),
+        )
+    except Exception:  # noqa: BLE001 - client may not support elicitation
+        return None
+    if result.action == "accept":
+        return result.data.processing_unit_application
+    return None
 
 
 @mcp.tool(
@@ -144,9 +182,9 @@ async def analyze_models() -> str:
 @mcp.tool(
     name="create_application_process",
     description=(
-        "Create an application process on the active processing unit application — the "
-        "automation equivalent of the UI commands 'New → Application Process (Providing Default "
-        "Task)' and plain 'New → Application Process'. "
+        "Create an application process on a processing unit application of the executable "
+        "application — the automation equivalent of the UI commands 'New → Application Process "
+        "(Providing Default Task)' and plain 'New → Application Process'. "
         "DECISION RULE: pick this tool when the user asks to create an application process and does "
         "NOT mention a specific behavior model. For the model-driven case, use "
         "`create_preconfigured_application_process` instead. "
@@ -165,15 +203,20 @@ async def analyze_models() -> str:
         "MULTIPLE APPLICATION PROCESSES: when one request asks for several application processes, "
         "call this tool once per application process and carry that application process's own "
         "`name` and its own `provide_default_task` value into each call. "
-        "ARGUMENTS: send `name`, `provide_default_task`, and `bus_config_names` as TOP-LEVEL "
-        "arguments. A nested `{'input': {...}}` object is accepted for compatibility, but only the "
-        "fields listed here are read — never invent a different wrapper. "
+        "ARGUMENTS: send `name`, `provide_default_task`, `bus_config_names`, and "
+        "`processing_unit_application` as TOP-LEVEL arguments. A nested `{'input': {...}}` object "
+        "is accepted for compatibility, but only the fields listed here are read — never invent a "
+        "different wrapper. "
         "BUS CONFIG ASSIGNMENT (default = ALL): the new application process is automatically "
         "assigned to every existing bus configuration (sets 'ManuallyAssignedApplicationProcess'). "
         "Pass `bus_config_names` to scope the assignment to specific configurations, or pass an "
         "empty list `[]` to skip assignment entirely. "
-        "PRECONDITION: a ProcessingUnitApplication must exist (register a hardware platform or call "
-        "`add_processing_unit_application` for VEOS workflows)."
+        "PROCESSING UNIT APPLICATION: pass `processing_unit_application` when the user names the "
+        "processing unit application that should host the application process. When it is omitted: "
+        "if no processing unit application exists, one is created and used; if exactly one exists, "
+        "that one is used; if several exist, the server asks the user which one to use — if no "
+        "answer arrives, the call fails and the user must be asked, then call again with "
+        "`processing_unit_application` set to the chosen name."
     ),
     annotations={
         "readOnlyHint": False,
@@ -222,14 +265,26 @@ async def create_application_process(
             ),
         ),
     ] = None,
+    processing_unit_application: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description=(
+                "Name of the processing unit application that hosts the new application process. "
+                "Send it when the user names one. Omit to let the server decide: none exists → one "
+                "is created; exactly one exists → it is used; several exist → the user is asked."
+            ),
+        ),
+    ] = None,
     input: Annotated[
         CreateApplicationProcessInput | None,
         Field(
             default=None,
             description=(
                 "Compatibility wrapper for hosts that nest arguments. Prefer the top-level "
-                "`name`, `provide_default_task`, and `bus_config_names` arguments; values given "
-                "here are used only when the matching top-level argument is omitted."
+                "`name`, `provide_default_task`, `bus_config_names`, and "
+                "`processing_unit_application` arguments; values given here are used only when "
+                "the matching top-level argument is omitted."
             ),
         ),
     ] = None,
@@ -240,9 +295,19 @@ async def create_application_process(
             provide_default_task = input.provide_default_task
         if bus_config_names is None:
             bus_config_names = input.bus_config_names
+        if processing_unit_application is None:
+            processing_unit_application = input.processing_unit_application
+    if processing_unit_application is None:
+        processing_unit_application, error = await svc.select_processing_unit_application(
+            lambda names: _choose_processing_unit_application(ctx, names)
+        )
+        if error is not None:
+            return error
     if provide_default_task is None:
         provide_default_task = await _resolve_provide_default_task(ctx)
-    return await svc.create_application_process(name, bus_config_names, provide_default_task)
+    return await svc.create_application_process(
+        name, bus_config_names, provide_default_task, processing_unit_application
+    )
 
 
 @mcp.tool(

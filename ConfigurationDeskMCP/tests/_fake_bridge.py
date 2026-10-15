@@ -80,11 +80,18 @@ def dispatch_returns() -> dict[str, Any]:
         )
         return {"verified": True, "created_processes": ["AppProcess"], "model_name": model_name}
 
-    def _create_application_process(name=None, bus_config_names=None, provide_default_task=True):
+    def _create_application_process(
+        name=None,
+        bus_config_names=None,
+        provide_default_task=True,
+        processing_unit_application_name=None,
+    ):
         process_name = name or "AppProcess"
         return {
             "verified": True,
             "process_name": process_name,
+            "processing_unit_application": processing_unit_application_name
+            or "ProcessingUnitApplication",
             "provide_default_task": provide_default_task,
             "default_task_set": bool(provide_default_task),
             "default_task_property": "ProvideDefaultTask" if provide_default_task else "",
@@ -186,6 +193,7 @@ def dispatch_returns() -> dict[str, Any]:
         "remove_model": {"verified": True},
         "analyze_models": {},
         "create_application_process": _create_application_process,
+        "list_processing_unit_application_names": ["ProcessingUnitApplication"],
         "list_models": [
             "CentralGatewayECU_64-bit",
             "EngineAndBodyECUs_64-bit",

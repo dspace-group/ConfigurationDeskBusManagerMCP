@@ -64,6 +64,13 @@ class CreateApplicationProcessInput(BaseModel):
             "empty list = skip assignment."
         ),
     )
+    processing_unit_application: Optional[str] = Field(
+        default=None,
+        description=(
+            "Processing unit application that hosts the application process. Omit = create one "
+            "if none exists, use the only one, or ask the user when several exist."
+        ),
+    )
 
 
 class ListModelsInput(BaseModel):
