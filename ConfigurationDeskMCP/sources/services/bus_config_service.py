@@ -288,7 +288,7 @@ async def assign_to_application_process(
             return error_response(result["detail"], transient=False)
         if result.get("verified"):
             return success_response(
-                message=f"Bus config '{bus_config_name}' assigned to process '{result['process']}'",
+                message=f"Bus config '{bus_config_name}' assigned to application process '{result['process']}'",
                 verified=True,
             )
         return unverified_response(message="Assignment issued but could not verify")

@@ -44,7 +44,33 @@ class AnalyzeModelsInput(BaseModel):
 
 
 class CreateApplicationProcessInput(BaseModel):
-    pass
+    """Compatibility wrapper for hosts that nest tool arguments under `input`."""
+
+    name: Optional[str] = Field(
+        default=None,
+        description="Optional name for the new application process, e.g. 'Restbus_ApplicationProcess'",
+    )
+    provide_default_task: Optional[bool] = Field(
+        default=None,
+        description=(
+            "true = create the periodic default task; false = bare application process. "
+            "Omit only when the request says nothing about a default task."
+        ),
+    )
+    bus_config_names: Optional[list[str]] = Field(
+        default=None,
+        description=(
+            "Bus configurations to assign the application process to. Omit = all existing ones, "
+            "empty list = skip assignment."
+        ),
+    )
+    processing_unit_application: Optional[str] = Field(
+        default=None,
+        description=(
+            "Processing unit application that hosts the application process. Omit = create one "
+            "if none exists, use the only one, or ask the user when several exist."
+        ),
+    )
 
 
 class ListModelsInput(BaseModel):

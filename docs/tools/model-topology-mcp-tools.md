@@ -13,7 +13,7 @@ ports available for connection, and create application processes.
 | `replace_model` | Replace an existing model with another file. | Destructive because it changes the active model topology. |
 | `remove_model` | Remove a model from the project. | Destructive; related connections can be removed. |
 | `analyze_models` | Analyze loaded models and prepare their public interfaces. | May take time for large models. |
-| `create_application_process` | Create an application process with a default periodic task. | Requires a processing unit application. |
+| `create_application_process` | Create an application process, with or without a default periodic task. | Requires a processing unit application. Send `provide_default_task` whenever the request states it; it is only elicited from the user when omitted, and falls back to `true` when unanswered. Call once per application process when several are requested. |
 | `list_models` | List loaded models and file paths. | Read-only. |
 | `add_model_to_signal_chain` | Make all ports of one model available for connection. | Use for bulk port exposure. |
 | `add_model_port_to_signal_chain` | Make one named model port available. | Use `list_model_ports` first when the port name is unknown. |

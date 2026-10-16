@@ -26,7 +26,11 @@ authoritative.
   CAN, LIN, or Ethernet channel uses `create_io_function_block`.
 - For an application inside a project, use `add_application` after creating or
   opening the project. Use `create_application_process` only for execution
-  scheduling, a periodic task, or a process for a model.
+  scheduling, a periodic task, or an application process for a model.
+- When a request states whether an application process has a default task, send
+  `provide_default_task` on `create_application_process` instead of leaving it
+  out; omitting a stated value makes the server ask the user again. Create each
+  requested application process with its own call, name, and default-task value.
 - Assign whole ECUs with `assign_ecu_to_bus_config`. Assign an exact cluster,
   PDU, or signal with `assign_matrix_to_bus_config`; never widen an exact
   PDU/signal request to whole-ECU scope.
