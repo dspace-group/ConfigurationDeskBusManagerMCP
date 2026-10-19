@@ -53,10 +53,10 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `assign_ecu_to_bus_config` | Bus configuration | Prompt: `create_bus_configuration` | Assign whole ECUs except `DUT_ECU` to the simulated part of `CAN_Restbus`; do not use this for an exact PDU or signal. |
 | `add_feature_to_bus_element` | Bus configuration | Prompt: `add_feature_to_bus_element` | Add exact feature `BusISignalValueAccess` to signal `EngineSpeed` in `CAN_Restbus`, then inspect the exposed function ports. |
 | `remove_bus_config_elements` | Bus configuration | [Bus Configuration](../tools/bus-configuration-mcp-tools.md) | Remove only ECU `ECU_A` from `CAN_Restbus`; confirm its type and scope first because its child signals and features are also removed. |
-| `generate_bus_containers` | Bus configuration | Prompt: `bus_manager_restbus_simulation` | After configuring the required bus configurations and features, generate BSC output only because container delivery was explicitly requested. |
+| `generate_bus_containers` | Bus configuration | Prompt: `bus_manager_restbus_simulation` | After configuring the required bus configurations and features, generate BSC output because container delivery was explicitly requested. |
 | `find_bus_config_elements` | Bus configuration | Prompt: `add_feature_to_bus_element` | In `CAN_Restbus`, find exposed function ports; use the returned XPath and next offset for precise property work or additional pages. |
 | `assign_bus_config_to_application_process` | Bus configuration | Prompt: `create_application_process` | After creating `RestbusProcess`, assign bus configuration `CAN_Restbus` to that exact application process. |
-| `set_function_port_property` | Bus configuration | [Property Setting Boundary](README.md#property-setting-boundary) | On the exposed function port in `CAN_Restbus`, set `IsMappable=true`; use this only for function-port interface properties. |
+| `set_function_port_property` | Bus configuration | [Property Setting Boundary](README.md#property-setting-boundary) | On the exposed function port in `CAN_Restbus`, set `IsMappable=true`; use this only for function port interface properties. |
 | `set_bus_config_element_property` | Bus configuration | Prompt: `configure_inspection_manipulation` | In `CAN_Restbus`, set an overwrite value on the exact TX signal `EngineSpeed`; use this for a bus feature, not a matrix value or function port. |
 
 ## Models and Signal Chain
@@ -68,7 +68,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `remove_model` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | Check connections, then remove only model `obsolete_model`; do not remove other configured models. |
 | `analyze_models` | Model topology | Prompt: `add_behavior_model` | Analyze loaded Simulink models before exposing or connecting their ports; skip this for already analyzed SIC, BSC, or FMU files. |
 | `create_application_process` | Model topology | Prompt: `create_application_process` | To work without a behavior model, create application process RestbusProcess with a default task and assign only `CAN_Restbus` to it.  |
-| `list_models` | Model topology | Prompt: `add_behavior_model` | List loaded models and their file paths before selecting one for a process, port exposure, replacement, or removal. |
+| `list_models` | Model topology | Prompt: `add_behavior_model` | List loaded models and their file paths before selecting one for an application process, port exposure, replacement, or removal. |
 | `add_model_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | Expose every model port block of model `plant_model` in the signal chain; use this only when all of them are intended. |
 | `add_model_port_block_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | List model port blocks for `plant_model`, then expose only its named block `EngineSpeed` in the signal chain. |
 | `list_model_port_blocks` | Model topology | Prompt: `connect_model_port_blocks` | List exact available model port block names for `plant_model` before exposing one or creating an explicit connection. |
@@ -98,7 +98,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | Assign the reviewed channel-set index `0` to `CAN_Body` when a specific physical channel is required. |
 | `auto_assign_channel_set` | Bus access | Prompt: `assign_bus_hardware` | With a registered physical platform, automatically choose an eligible channel set for the single function block `CAN_Body`. |
 | `assign_hardware_automatically` | Bus access | Prompt: `assign_bus_hardware` | With the hardware topology reviewed, automatically assign remaining eligible resources to all I/O function blocks. |
-| `auto_connect_function_blocks_to_model_port_blocks` | Bus access | Prompt: `connect_model_port_blocks` | After the model, process, signal-chain port blocks, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
+| `auto_connect_function_blocks_to_model_port_blocks` | Bus access | Prompt: `connect_model_ports` | After the model, process, signal-chain ports, and I/O blocks are ready, connect ports whose names match and inspect the resulting links. |
 | `create_preconfigured_application_process` | Bus access | Prompt: `create_application_process` | Create a model-specific preconfigured application process for `plant_model`; use the generic process tool when no model is named. |
 
 ## Working Views and Build

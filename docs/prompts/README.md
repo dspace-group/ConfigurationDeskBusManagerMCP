@@ -106,7 +106,7 @@ Choose the property tool by ownership:
 
 - Matrix database value: `set_matrix_element_property`.
 - Bus feature or manipulation value: `set_bus_config_element_property`.
-- Exposed function-port value: `set_function_port_property`.
+- Exposed function port value: `set_function_port_property`.
 - Hardware I/O block setting: `set_io_function_block_property`.
 
 Use `configurationdesk://reference/valid-values`,

@@ -36,7 +36,7 @@ Both read tools accept `offset` and `limit`; refer to the shared
 	initial values or PDU/signal length.
 
 Use `set_bus_config_element_property` for bus-configuration feature values and
-`set_function_port_property` for exposed function-port values.
+`set_function_port_property` for exposed function port values.
 
 ## Related Guides
 

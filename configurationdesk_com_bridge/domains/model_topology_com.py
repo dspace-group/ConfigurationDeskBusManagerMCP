@@ -148,47 +148,101 @@ def _iter_relation_descendants(rel, parent):
     return collected
 
 
-def _resolve_processing_unit_application(connection, atm_relation):
-    """Locate the ProcessingUnitApplication under the executable application.
+def _find_processing_unit_applications(atm_relation) -> tuple[list[Any], str]:
+    """Return all ProcessingUnitApplications of the executable application.
 
-    Returns ``(pua, error_detail)``. When the processing unit application
-    cannot be found, ``pua`` is ``None`` and ``error_detail`` describes the
-    cause.
+    Returns ``(puas, error_detail)``. ``error_detail`` is non-empty only when
+    the ApplicationConfiguration relation could not be read.
     """
     try:
         top_nodes = atm_relation.GetTopNodes()
     except Exception as exc:
-        return None, f"Cannot read ApplicationConfiguration top nodes: {exc}"
+        return [], f"Cannot read ApplicationConfiguration top nodes: {exc}"
     try:
         if top_nodes.Count == 0:
-            return None, "ApplicationConfiguration has no top-level executable application."
+            return [], "ApplicationConfiguration has no top-level executable application."
         exec_app = top_nodes.Item(0)
     except Exception as exc:
-        return None, f"Cannot access executable application: {exc}"
+        return [], f"Cannot access executable application: {exc}"
 
     try:
         descendants = _iter_relation_descendants(atm_relation, exec_app)
     except Exception as exc:
-        return None, f"Cannot enumerate ApplicationConfiguration descendants: {exc}"
+        return [], f"Cannot enumerate ApplicationConfiguration descendants: {exc}"
 
-    pua = None
+    puas = []
     for el in descendants:
         try:
             roles = list(el.Roles)
         except Exception:
             roles = []
         if "ProcessingUnitApplication" in roles:
-            pua = el
-            break
+            puas.append(el)
+    return puas, ""
 
-    if pua is None:
+
+def _element_name(element) -> str:
+    try:
+        return element.Name
+    except Exception:
+        return ""
+
+
+def list_processing_unit_application_names(connection) -> list[str]:
+    """Return the names of all ProcessingUnitApplications of the executable application."""
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception:
+        return []
+    puas, _ = _find_processing_unit_applications(atm_relation)
+    return [_element_name(pua) for pua in puas]
+
+
+def _resolve_processing_unit_application(
+    connection, atm_relation, processing_unit_application_name: Optional[str] = None
+):
+    """Locate the target ProcessingUnitApplication under the executable application.
+
+    With ``processing_unit_application_name`` the processing unit application
+    of that name is returned (exact match first, then case-insensitive).
+    Without a name, the executable application must contain exactly one
+    processing unit application.
+
+    Returns ``(pua, error_detail)``. When no processing unit application can be
+    resolved, ``pua`` is ``None`` and ``error_detail`` describes the cause.
+    """
+    puas, detail = _find_processing_unit_applications(atm_relation)
+    if detail:
+        return None, detail
+
+    if not puas:
         return None, (
-            "No ProcessingUnitApplication is available under the active executable application. "
+            "No ProcessingUnitApplication is available under the executable application. "
             "ConfigurationDesk treats hardware topology and processing-unit applications as separate "
             "configuration objects; register/import hardware for processing-unit assignment, then add a "
             "ProcessingUnitApplication explicitly before creating an application process."
         )
-    return pua, ""
+
+    available = [_element_name(pua) for pua in puas]
+    if processing_unit_application_name:
+        for pua, pua_name in zip(puas, available):
+            if pua_name == processing_unit_application_name:
+                return pua, ""
+        wanted = processing_unit_application_name.lower()
+        for pua, pua_name in zip(puas, available):
+            if pua_name.lower() == wanted:
+                return pua, ""
+        return None, (
+            f"ProcessingUnitApplication '{processing_unit_application_name}' not found. "
+            f"Available processing unit applications: {', '.join(available)}."
+        )
+
+    if len(puas) > 1:
+        return None, (
+            "The executable application contains several processing unit applications "
+            f"({', '.join(available)}); specify which one should host the application process."
+        )
+    return puas[0], ""
 
 
 def _set_provide_default_task(process) -> tuple[bool, str]:
@@ -370,14 +424,16 @@ def create_application_process(
     connection,
     name: Optional[str] = None,
     bus_config_names: Optional[list[str]] = None,
+    provide_default_task: bool = True,
+    processing_unit_application_name: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Create an application process that provides a default task.
+    """Create an application process, optionally providing a default task.
 
-    Mirrors the ConfigurationDesk UI command
-    *New → Application Process (Providing Default Task)*:
+    With ``provide_default_task=True`` this mirrors the ConfigurationDesk UI
+    command *New → Application Process (Providing Default Task)*:
 
-      1. Create an ``ApplicationProcess`` on the ``ProcessingUnitApplication``
-         of the active executable application via the
+      1. Create an ``ApplicationProcess`` on the target
+         ``ProcessingUnitApplication`` of the executable application via the
          ``ApplicationConfiguration`` relation.
       2. Set the application process's ``ProvideDefaultTask`` property to
          ``True``. ConfigurationDesk then automatically creates a periodic
@@ -387,17 +443,27 @@ def create_application_process(
          configurations (sets ``ManuallyAssignedApplicationProcess`` on each
          target bus configuration).
 
-    This is the canonical way to set up scheduling when working *without* a
-    behavior model (e.g. pure restbus simulation that is only accessed from
-    experiment software). Use :func:`create_preconfigured_application_process`
-    instead when an application process should be created for a specific
-    behavior model.
+    With ``provide_default_task=False`` step 2 is skipped, which mirrors the
+    plain *New → Application Process* command: the application process is created
+    without a task, so tasks must be created manually, can be provided by model
+    implementations, or can be created and configured automatically using the
+    Optimize Configuration command for application processes with models.
+
+    An application process providing a default task is the canonical way to set up
+    scheduling when working *without* a behavior model (e.g. pure restbus
+    simulation that is only accessed from experiment software). Use
+    :func:`create_preconfigured_application_process` instead when an
+    application process should be created for a specific behavior model.
 
     Parameters
     ----------
     name
         Optional human-readable name for the new application process. When
         omitted, the ConfigurationDesk default name is kept.
+    provide_default_task
+        ``True`` (default) → set ``ProvideDefaultTask`` so ConfigurationDesk
+        creates the periodic default task. ``False`` → create a bare
+        application process without touching the property.
     bus_config_names
         Controls bus configuration assignment of the new application process:
 
@@ -407,15 +473,21 @@ def create_application_process(
         * Non-empty list → assign only to the named bus configurations.
           Unknown names are returned in ``missing_bus_configs``.
         * Empty list (``[]``) → skip bus configuration assignment entirely.
+    processing_unit_application_name
+        Name of the ProcessingUnitApplication that hosts the new application
+        process.
     """
     try:
         atm_relation = connection.relations.Item("ApplicationConfiguration")
     except Exception as exc:
         return {"error": True, "detail": f"ApplicationConfiguration relation not available: {exc}"}
 
-    pua, detail = _resolve_processing_unit_application(connection, atm_relation)
+    pua, detail = _resolve_processing_unit_application(
+        connection, atm_relation, processing_unit_application_name
+    )
     if pua is None:
         return {"error": True, "detail": detail}
+    pua_name = _element_name(pua) or processing_unit_application_name
 
     before_processes = set(list_application_process_names(connection))
 
@@ -443,9 +515,12 @@ def create_application_process(
     # 3) Turn it into an "Application Process providing default task" by
     # toggling the dedicated property. ConfigurationDesk creates the
     # periodic task + runnable function automatically.
-    default_task_set, default_task_property = _set_provide_default_task(process)
+    if provide_default_task:
+        default_task_set, default_task_property = _set_provide_default_task(process)
+    else:
+        default_task_set, default_task_property = False, ""
 
-    # Wait until the new process becomes observable.
+    # Wait until the new application process becomes observable.
     verified, processes_after = wait_for_state(
         lambda: list_application_process_names(connection),
         lambda names: bool(set(names) - before_processes),
@@ -466,6 +541,8 @@ def create_application_process(
 
     result: dict[str, Any] = {
         "process_name": process_name,
+        "processing_unit_application": pua_name,
+        "provide_default_task": provide_default_task,
         "default_task_set": default_task_set,
         "default_task_property": default_task_property,
         "default_task_name": default_task_name,

@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 from configurationdesk_com_bridge import dispatch, get_connection
-from configurationdesk_com_bridge.domains import model_topology_com
+from configurationdesk_com_bridge.domains import app_management_com, model_topology_com
 from configurationdesk_com_bridge.errors import BridgeError
 
 from sources.models.envelope_builder import tool_error_result
@@ -20,6 +20,8 @@ from sources.tools._responses import error_response, success_response, unverifie
 from sources.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+ProcessingUnitApplicationChooser = Callable[[list[str]], Awaitable[Optional[str]]]
 
 
 async def add_model(path: str, analyze: bool = True, create_preconfigured: bool = True) -> str:
@@ -110,17 +112,104 @@ async def analyze_models() -> str:
         return error_response(str(e), transient=False)
 
 
+async def _list_processing_unit_application_names(conn) -> list[str]:
+    return list(await dispatch(model_topology_com.list_processing_unit_application_names, conn))
+
+
+def _processing_unit_application_choice_required(names: list[str]) -> str:
+    return error_response(
+        "The executable application contains several processing unit applications "
+        f"({', '.join(names)}). The target processing unit application for the new "
+        "application process was not selected.",
+        transient=False,
+        next_action=(
+            "Ask the user which processing unit application should host the application "
+            "process, then call `create_application_process` again with "
+            "`processing_unit_application` set to that name."
+        ),
+    )
+
+
+async def select_processing_unit_application(
+    choose: Optional[ProcessingUnitApplicationChooser] = None,
+) -> tuple[Optional[str], Optional[str]]:
+    """Select the processing unit application that hosts a new application process.
+
+    Returns ``(name, error)``:
+
+    * no processing unit application → ``(None, None)``; one is created by
+      :func:`create_application_process`.
+    * exactly one → ``(name, None)``.
+    * several → *choose* is asked for the name; ``(None, error)`` when no valid
+      choice is made.
+    """
+    try:
+        conn = get_connection()
+        names = await _list_processing_unit_application_names(conn)
+    except BridgeError as exc:
+        return None, tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error listing processing unit applications")
+        return None, error_response(str(e), transient=False)
+
+    if not names:
+        return None, None
+    if len(names) == 1:
+        return names[0], None
+
+    chosen = await choose(names) if choose is not None else None
+    if chosen in names:
+        return chosen, None
+    if chosen:
+        match = next((n for n in names if n.lower() == chosen.lower()), None)
+        if match is not None:
+            return match, None
+    return None, _processing_unit_application_choice_required(names)
+
+
 async def create_application_process(
     name: Optional[str] = None,
     bus_config_names: Optional[list[str]] = None,
+    provide_default_task: bool = True,
+    processing_unit_application: Optional[str] = None,
 ) -> str:
+    """Create an application process on a processing unit application.
+
+    Without *processing_unit_application*: a processing unit application is
+    created when none exists, the only one is used when exactly one exists, and
+    an error asking for a selection is returned when several exist.
+    """
     try:
         conn = get_connection()
+        pua_created = False
+        if processing_unit_application is None:
+            names = await _list_processing_unit_application_names(conn)
+            if not names:
+                created = await dispatch(app_management_com.add_processing_unit_application, conn)
+                if not created.get("processing_unit_application_created"):
+                    return error_response(
+                        "No processing unit application exists and none could be created: "
+                        f"{created.get('processing_unit_application_detail', '')}",
+                        transient=False,
+                        next_action=(
+                            "Add a processing unit application in ConfigurationDesk (Processing "
+                            "Resource Assignment table → New → Processing Unit Application), then retry."
+                        ),
+                    )
+                pua_created = True
+                names = await _list_processing_unit_application_names(conn)
+            if len(names) > 1:
+                return _processing_unit_application_choice_required(names)
+            if names:
+                processing_unit_application = names[0]
+
         result = await dispatch(
             model_topology_com.create_application_process,
             conn,
             name,
             bus_config_names,
+            provide_default_task,
+            processing_unit_application,
             timeout_ms=120000,
         )
         if result.get("error"):
@@ -128,16 +217,28 @@ async def create_application_process(
         if result.get("verified"):
             payload = dict(result)
             payload.pop("verified", None)
+            payload["processing_unit_application_created"] = pua_created
             process_name = payload.get("process_name") or "(default name)"
+            pua_name = payload.get("processing_unit_application") or processing_unit_application
+            location = f" on processing unit application '{pua_name}'" if pua_name else ""
+            if pua_created:
+                location += " (created because none existed)"
             default_task_set = payload.get("default_task_set")
-            if default_task_set:
+            if not provide_default_task:
                 msg = (
-                    f"Application process '{process_name}' created with a default task "
+                    f"Application process '{process_name}' created{location} without a default "
+                    "task ('Provide default task' left disabled). Assign a model implementation, "
+                    "then start the 'Optimize Configuration' command on the application process "
+                    "before building."
+                )
+            elif default_task_set:
+                msg = (
+                    f"Application process '{process_name}' created{location} with a default task "
                     f"({payload.get('default_task_property') or 'ProvideDefaultTask'} = True)."
                 )
             else:
                 msg = (
-                    f"Application process '{process_name}' created, but the "
+                    f"Application process '{process_name}' created{location}, but the "
                     "'Provide default task' property could not be set automatically. "
                     "Open the application process properties in ConfigurationDesk and "
                     "enable 'Provide default task' manually."

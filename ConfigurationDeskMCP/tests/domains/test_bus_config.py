@@ -2,7 +2,7 @@
 """Domain: bus configuration tools (sources/tools/bus_config.py).
 
 Covers every bus-configuration tool at the service layer (through the fake
-bridge) plus the bus-config COM behavior (function-port and feature-node
+bridge) plus the bus-config COM behavior (function port and feature-node
 property setting) and value-validation edge cases.
 """
 
@@ -240,7 +240,7 @@ def test_set_function_port_property_preserves_structured_port_discovery_guidance
     async def fake_dispatch(*args, **kwargs):
         return {
             "error": True,
-            "detail": "No function-port property nodes found for XPath: //FunctionPort/@IsMappable",
+            "detail": "No function port property nodes found for XPath: //FunctionPort/@IsMappable",
             "error_code": "FUNCTION_PORT_PROPERTY_NOT_FOUND",
             "retryable": False,
             "recovery_hint": (
@@ -248,7 +248,7 @@ def test_set_function_port_property_preserves_structured_port_discovery_guidance
                 "Do NOT call generate_bus_containers just to make the function port appear."
             ),
             "next_action": (
-                "Call `find_bus_config_elements`, verify the exact function-port XPath, then retry "
+                "Call `find_bus_config_elements`, verify the exact function port XPath, then retry "
                 "`set_function_port_property`."
             ),
         }

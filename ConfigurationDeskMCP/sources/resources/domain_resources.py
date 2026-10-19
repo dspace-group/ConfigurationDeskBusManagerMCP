@@ -35,7 +35,7 @@ ConfigurationDesk provides a COM-based automation API for HIL (Hardware-in-the-L
 6. **Analyze Models** — Use `analyze_models` to detect ports and interfaces
 7. **Add Communication Matrix** — Use `add_communication_matrix` for ARXML/DBC/LDF files
 8. **Configure Bus** — Use `create_bus_configuration` and `assign_matrix_to_bus_config`
-9. **Create Application Process** — Use `create_application_process` (creates an application process providing a default periodic task; pass `bus_config_names` to also assign it to bus configurations) or `create_preconfigured_application_process` (model-driven)
+9. **Create Application Process** — Use `create_application_process` (creates an application process; `provide_default_task=true` adds the periodic default task, `false` creates a bare application process, and the value must be sent whenever the request states it — omit it only when it was never stated, which makes the server ask the user; pass `bus_config_names` to also assign it to bus configurations; pass `processing_unit_application` to select the host processing unit application — when omitted, one is created if none exists, the only one is used, or the user is asked when several exist) or `create_preconfigured_application_process` (model-driven)
 10. **Configure Function Ports** — Use `set_function_port_property` for IsMappable etc.
 10b. **Configure Feature/Matrix Properties** — Use `set_bus_config_element_property` for feature nodes like 'Countdown start value' or 'Overwrite value', and `set_matrix_element_property` for matrix properties like PDU/signal 'Length' or 'Initial value'.
 11. **Connect Ports** — Use `auto_connect_function_blocks_to_model_port_blocks` for automatic name-based matching
@@ -117,7 +117,7 @@ _TOOL_CATEGORIES = """\
 ## Model Topology
 - `add_model` / `replace_model` / `remove_model`
 - `analyze_models` — Analyze model port blocks and interfaces
-- `create_application_process` — Create an application process providing a default periodic task (model-less; optional bus-config assignment)
+- `create_application_process` — Create an application process, with or without a periodic default task (send `provide_default_task` whenever the request states it; model-less; optional bus-config assignment; optional `processing_unit_application`, otherwise created if missing, reused if unique, or chosen by the user; call once per application process when several are requested)
 - `list_models` — List all models
 
 ## Hardware Topology
@@ -551,7 +551,7 @@ explicitly requested.
 | Function Port | Port interface (IsMappable, IsTestAutomationSupportEnabled, InitialValue) | `set_function_port_property` |
 | Matrix Element | Communication-database value (PDU/signal Length, signal Initial value) | `set_matrix_element_property` |
 | I/O Function Block | Hardware access block + settings (BaudRate) | `create_io_function_block` / `set_io_function_block_property` |
-| Bus Simulation Container (.bsc) | Compiled artifact for VEOS/explicit delivery | `generate_bus_containers` |
+| Bus simulation container (.bsc) | Packaged bus communication; import into VEOS (offline simulation application) or ConfigurationDesk (real-time application) | `generate_bus_containers` |
 
 ## Intent → tool
 | User intent | Correct tool | NOT |
@@ -575,7 +575,7 @@ explicitly requested.
   (xpath="//FunctionPort") and `set_function_port_property` directly.
 - If `set_function_port_property` fails, re-run `find_bus_config_elements` to
   verify the actual ports/features. `generate_bus_containers` is NOT recovery.
-- Feature-node vs function-port vs matrix vs hardware property setters are four
+- Feature-node vs function port vs matrix vs hardware property setters are four
   DIFFERENT tools — see the table above.
 """
 
@@ -619,7 +619,10 @@ names see `configurationdesk://reference/xpath`.
 ## Model file extensions (add_model)
 - `.slx` / `.mdl` — Simulink (require `analyze_models`).
 - `.sic` — Simulink implementation container (pre-analyzed).
-- `.bsc` — Bus Simulation Container.
+- `.bsc` — Bus simulation container (pre-analyzed). Contains configured bus
+  communication. It can be used to implement the bus communication in a
+  real-time application (RTA) for SCALEXIO, MicroAutoBox III, or MicroLabBox II,
+  or in an offline simulation application (OSA) for VEOS.
 - `.fmu` — Functional Mock-up Unit (pre-analyzed).
 
 `generate_bus_containers` supports only SIC model implementations; FMU and
@@ -688,7 +691,7 @@ Do NOT retry a call with `retryable=false` — follow its `recovery_hint` instea
 | error_code | Meaning / fix |
 |---|---|
 | `INVALID_VALUE_TYPE` | The value passed to a property setter is the wrong type — check the property catalog resources for the expected type. |
-| `FUNCTION_PORT_PROPERTY_NOT_FOUND` | The named function-port property/port does not exist. Re-run `find_bus_config_elements` to verify the actual port names — do NOT call `generate_bus_containers` as recovery. |
+| `FUNCTION_PORT_PROPERTY_NOT_FOUND` | The named function port property/port does not exist. Re-run `find_bus_config_elements` to verify the actual port names — do NOT call `generate_bus_containers` as recovery. |
 
 ## Retry policy
 Retry at most once, and only for `retryable=true` codes. On a second failure or

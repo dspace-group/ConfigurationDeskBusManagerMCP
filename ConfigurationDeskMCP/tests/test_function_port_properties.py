@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for the function-port property catalog and alias resolution."""
+"""Unit tests for the function port property catalog and alias resolution."""
 
 from __future__ import annotations
 

@@ -24,7 +24,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "mcp>=1.0",
+    "mcp>=1.30.0,<2",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
     "configurationdesk-com-bridge>=0.1.0",

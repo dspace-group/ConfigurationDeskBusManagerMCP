@@ -854,7 +854,7 @@ def set_function_port_property(
     if not props:
         return {
             "error": True,
-            "detail": f"No function-port property nodes found for XPath: {xpaths_to_try[0]}",
+            "detail": f"No function port property nodes found for XPath: {xpaths_to_try[0]}",
             "error_code": "FUNCTION_PORT_PROPERTY_NOT_FOUND",
             "retryable": False,
             "recovery_hint": (
@@ -890,14 +890,14 @@ def set_function_port_property(
         return {
             "error": True,
             "detail": (
-                f"Matched {len(props)} function-port property node(s) for XPath '{xpath}', "
+                f"Matched {len(props)} function port property node(s) for XPath '{xpath}', "
                 "but TrySetValue returned False for all of them."
             ),
             "error_code": "FUNCTION_PORT_PROPERTY_WRITE_FAILED",
             "retryable": False,
             "recovery_hint": (
-                "Verify that you targeted the correct function-port property nodes and that the "
-                "requested property is writable for those ports. Re-check the actual function-port "
+                "Verify that you targeted the correct function port property nodes and that the "
+                "requested property is writable for those ports. Re-check the actual function port "
                 "names/XPath with find_bus_config_elements before retrying. Do NOT use "
                 "generate_bus_containers as recovery for a failed property write."
             ),

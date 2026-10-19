@@ -194,7 +194,7 @@ element_type="{target_type}", bus_config_name="{bus_config_name}".
 - Feature-node values (Countdown start value, Feature switch, Overwrite value,
   Offset value, manipulation Length) → `set_bus_config_element_property`.
 - Communication-matrix values (PDU/signal Length, signal Initial value) → `set_matrix_element_property`.
-- Function-port values (IsMappable, IsTestAutomationSupportEnabled, InitialValue) → `set_function_port_property`.
+- Function port values (IsMappable, IsTestAutomationSupportEnabled, InitialValue) → `set_function_port_property`.
 
 ## Verify
 Call `find_bus_config_elements` with xpath="//FunctionPort" to inspect the exposed
@@ -225,7 +225,8 @@ Call `add_model` with path="{model_path}".
 - .fmu — Functional Mock-up Unit (FMU)
 - .slx / .mdl — Simulink model (model analysis required).
 - .sic — Simulink implementation container.
-- .bsc — Bus Simulation Container.
+- .bsc — Bus simulation container. Contains configured bus communication. It can be used to implement 
+the bus communication in a real-time application (RTA) or offline simulation application (OSA).
 - .fmu — Functional Mock-up Unit (FMI-based model implementation).
 
 ## Step 2 — Analyze (Simulink model only)
@@ -244,7 +245,7 @@ Skip for .sic/.bsc/.fmu (already analyzed).
 
 @mcp.prompt(
     name="create_application_process",
-    description="Single task: create an application process (default periodic task), optionally assigned to bus configurations or a specific model",
+    description="Single task: create an application process (with or without a default periodic task), optionally assigned to bus configurations or a specific model",
 )
 def create_application_process(
     process_name: str = "Restbus_ApplicationProcess",
@@ -253,19 +254,38 @@ def create_application_process(
     return f"""\
 # Create an Application Process
 
-Goal: provide execution scheduling — mirrors the UI command
-'New → Application Process (Providing Default Task)'.
+Goal: provide execution scheduling — mirrors the UI commands
+'New → Application Process (Providing Default Task)' and 'New → Application Process'.
 
 {_ENSURE_RUNNING}
 
-## Prerequisite
-A ProcessingUnitApplication is mandatory regardless of the target (real-time
-hardware or BSC/VEOS). If none exists yet, call `add_processing_unit_application`.
+## Processing unit application
+The application process is created on a processing unit application of the
+executable application. Pass `processing_unit_application` when the user names
+one. Otherwise: if none exists, one is created and used; if exactly one exists,
+it is used; if several exist, the user is asked which one to use.
 
-## Step 1 — Create the process (default periodic task)
-Call `create_application_process` with name="{process_name}". This sets
-'Provide default task' = true, so a periodic default task with a resolved runnable
-function is created automatically.
+## Step 1 — Create the application process
+Call `create_application_process` with name="{process_name}".
+
+## Default task
+- `provide_default_task=true` → 'Provide default task' = true, so a periodic default
+  task with a resolved runnable function is created automatically. Required when
+  working WITHOUT a behavior model (restbus simulation, wire testing).
+- `provide_default_task=false` → bare application process; its tasks can be provided by
+  assigned model implementations, can be created and configured automatically using the
+  Optimize Configuration command for application processes with models, or can be
+  created manually.
+- Always send the parameter when the request already states it ('with default task'
+  → true, 'without default task' → false). Omitting it re-asks the user for an
+  answer that was already given.
+- Omit the parameter only when it was never stated → the server asks the user; if no
+  answer is received, a default task is created.
+
+## Several application processes in one request
+Call `create_application_process` once per application process, carrying that
+application process's own `name` and its own `provide_default_task` value into
+each call.
 
 ## Bus-config assignment
 - Omit `bus_config_names` → assigned to ALL existing bus configurations.
@@ -273,7 +293,7 @@ function is created automatically.
 - Skip assignment → pass an empty list [].
 
 ## Model-driven alternative
-For a process pre-configured for ONE behavior model, call
+For an application process pre-configured for ONE behavior model, call
 `create_preconfigured_application_process` with model_name="<model>" instead.
 """
 

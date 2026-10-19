@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Canonical function-port property names and GUI alias resolution.
+"""Canonical function port property names and GUI alias resolution.
 
 Single source of truth for both:
 
@@ -28,7 +28,7 @@ from typing import Optional
 
 
 class _Prop:
-    """Metadata for a single function-port property."""
+    """Metadata for a single function port property."""
 
     __slots__ = (
         "canonical",
@@ -306,7 +306,7 @@ def validate_property_value(
 def normalize_property_value(
     canonical_name: str, value: bool | int | float | str
 ) -> bool | int | float | str:
-    """Normalize compatibility values for known function-port properties.
+    """Normalize compatibility values for known function port properties.
 
     Some tool stacks serialize boolean arguments as ``0``/``1`` even when the
     model emitted ``true``/``false``. Coerce only known bool properties and only

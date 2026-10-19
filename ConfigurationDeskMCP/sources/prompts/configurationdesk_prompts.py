@@ -84,8 +84,8 @@ configured appropriately.
 Then assign the bus configuration to that application process with
 `assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
 
-For a model-less restbus process instead, call `create_application_process` — it
-auto-assigns to "{bus_config_name}".
+For a model-less restbus application process instead, call `create_application_process` with
+`provide_default_task=true` — it auto-assigns to "{bus_config_name}".
 
 ## Step 7 — Connect the ports
 Call `auto_connect_function_blocks_to_model_port_blocks` to wire matching
@@ -96,9 +96,12 @@ Call `check_conflicts` and fix any reported issues before producing the delivera
 (see the `check_and_resolve_conflicts` prompt for the common fixes).
 
 ## Step 9 — Produce the deliverable
-- deliverable="bsc" (VEOS / offline): call `generate_bus_containers`, then
+- deliverable="bsc" (container delivery): call `generate_bus_containers`, then
   `find_bus_config_elements` with xpath="//FunctionPort" to confirm the packaged
   interface. The BSC packages the existing function ports; it does not create them.
+  The container can be imported into VEOS to build an offline simulation application, or back into
+  ConfigurationDesk via `add_model` to build a real-time application — so this
+  deliverable does not rule out the real-time path below.
 - deliverable="rta" (real hardware): assign bus hardware
   (`create_io_function_block` → `set_io_function_block_property` BaudRate →
   `assign_bus_access` → `auto_assign_channel_set`), then `build_application`

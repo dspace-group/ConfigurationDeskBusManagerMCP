@@ -18,10 +18,10 @@ behavior.
 | `assign_ecu_to_bus_config` | Assign whole ECUs for a selected part. | Use for whole-ECU restbus scope. |
 | `add_feature_to_bus_element` | Add an access or behavior feature to selected elements. | Features can expose function ports. |
 | `remove_bus_config_elements` | Remove assigned elements by name, type, or XPath. | Destructive. |
-| `generate_bus_containers` | Generate BSC output. | Call only for explicit container or BSC delivery. |
+| `generate_bus_containers` | Generate BSC output. | Call only for explicit container or BSC delivery. Consumers: VEOS (for offline simulation applications) and ConfigurationDesk (for real-time applications). |
 | `find_bus_config_elements` | Find elements and exposed ports by name, type, or XPath. | Read-only; paginated. |
 | `assign_bus_config_to_application_process` | Associate a bus configuration with an application process. | Requires an application process. |
-| `set_function_port_property` | Change function-port properties. | Use the precise port XPath when scope is ambiguous. |
+| `set_function_port_property` | Change function port properties. | Use the precise port XPath when scope is ambiguous. |
 | `set_bus_config_element_property` | Change feature-node or bus-element properties. | Use for countdown, overwrite, offset, length, or feature values. |
 
 `find_bus_config_elements` accepts `offset` and `limit`; refer to the shared
@@ -42,7 +42,7 @@ behavior.
 |---|---|
 | Feature-node or bus-element value | `set_bus_config_element_property` |
 | Matrix database value | `set_matrix_element_property` |
-| Exposed function-port value | `set_function_port_property` |
+| Exposed function port value | `set_function_port_property` |
 | Hardware I/O setting | `set_io_function_block_property` |
 
 ## Typical Workflow
