@@ -668,7 +668,7 @@ def _read_model_port_properties(port: Any) -> dict[str, Any]:
 def list_model_ports(
     connection, model_name: str, port_block_name: Optional[str] = None
 ) -> dict[str, Any]:
-    """Return the model ports contained in a model's model port blocks.
+    """Return the model ports contained in the model port blocks of a model.
 
     Model ports are the children of a model port block: data inports, data
     outports, runnable function ports, and configuration ports. Each entry

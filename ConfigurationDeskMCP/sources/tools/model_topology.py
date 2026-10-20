@@ -344,9 +344,9 @@ async def list_models() -> str:
         "model, exposing all of them in the logical signal chain so they can later be wired to "
         "function blocks (e.g. via auto_connect_function_blocks_to_model_port_blocks). A model port block is "
         "the graphical representation of the ConfigurationDesk model interface in the signal chain. "
-        "INPUT: model_name only — do NOT pass a port block name. "
+        "INPUT: model_name only — do NOT pass a model port block name. "
         "DOES NOT: add behavior models (use add_model), create connections "
-        "(use auto_connect_function_blocks_to_model_port_blocks), or remove port blocks from the chain. "
+        "(use auto_connect_function_blocks_to_model_port_blocks), or remove model port blocks from the chain. "
         "PRECONDITION: the model must already be added (call add_model / analyze_models first)."
     ),
     annotations={
@@ -365,7 +365,7 @@ async def add_model_to_signal_chain(input: AddModelToSignalChainInput) -> str:
     name="add_model_port_block_to_signal_chain",
     description=(
         "[SIGNAL CHAIN — SELECTIVE] DECISION RULE: pick this tool whenever the user names a SPECIFIC "
-        "model port block (e.g. 'Sine_t', 'Throttle_In') alongside its model. If no port block "
+        "model port block (e.g. 'Sine_t', 'Throttle_In') alongside its model. If no model port block "
         "name is given, use add_model_to_signal_chain (BULK) instead. "
         "TRIGGER PHRASES: 'add model port block <block> of model <model> to signal chain', "
         "'add port <port> of <model> to signal chain', 'add <port> from <model> to the signal chain', "
@@ -381,7 +381,7 @@ async def add_model_to_signal_chain(input: AddModelToSignalChainInput) -> str:
         "address one level exactly. AMBIGUITY: if the tool reports that the name exists at several "
         "hierarchy levels, ask the user which path they mean — never pick one yourself. "
         "DOES NOT: add behavior models (use add_model), create connections "
-        "(use auto_connect_function_blocks_to_model_port_blocks), or affect other port blocks of the same model. "
+        "(use auto_connect_function_blocks_to_model_port_blocks), or affect other model port blocks of the same model. "
         "PRECONDITION: the model must already be added (call add_model / analyze_models first)."
     ),
     annotations={

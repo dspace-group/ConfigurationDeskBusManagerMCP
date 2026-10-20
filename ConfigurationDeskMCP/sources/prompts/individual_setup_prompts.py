@@ -238,8 +238,8 @@ Skip for .sic/.bsc/.fmu (already analyzed).
 - `list_model_port_blocks` with model_name="{model_name}" — the available model port blocks.
 
 ## Step 4 — Expose model port blocks in the signal chain
-- All port blocks → `add_model_to_signal_chain` with model_name="{model_name}".
-- One port block → `add_model_port_block_to_signal_chain` with model_name="{model_name}" and the exact port_block_name.
+- All model port blocks → `add_model_to_signal_chain` with model_name="{model_name}".
+- One model port block → `add_model_port_block_to_signal_chain` with model_name="{model_name}" and the exact port_block_name.
 """
 
 
@@ -310,14 +310,13 @@ def connect_model_port_blocks(
 # Connect Model Port Blocks
 
 Goal: establish the data flow between function ports (bus or analog/digital I/O)
-and the behavior model's port blocks in the signal chain.
+and the model port blocks in the signal chain.
 
 {_ENSURE_RUNNING}
 
 ## Prerequisite
-- The model's port blocks are in the signal chain (see `add_behavior_model`).
+- The model port blocks are in the signal chain (see `add_behavior_model`).
 - Function blocks/ports exist (bus features or I/O function blocks).
-- An application process exists (see `create_application_process`).
 
 ## Step 1 — Make bus function ports mappable (if needed)
 Call `set_function_port_property` with property_name="IsMappable", value=true,

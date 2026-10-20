@@ -13,7 +13,6 @@ from sources.models.envelope_builder import tool_error_result
 from sources.services._observations import dispatch_observation
 from sources.services._pagination import DEFAULT_PAGE_LIMIT, paginate
 from sources.services._workflow_readiness import (
-    require_application_process_ready,
     require_hardware_topology_ready,
     require_model_ready,
 )
@@ -325,7 +324,6 @@ async def auto_connect_function_blocks_to_model_port_blocks() -> str:
     try:
         conn = get_connection()
         await require_model_ready(conn)
-        await require_application_process_ready(conn)
         result = await dispatch(
             bus_access_com.auto_connect_function_blocks_to_model_port_blocks,
             conn,
