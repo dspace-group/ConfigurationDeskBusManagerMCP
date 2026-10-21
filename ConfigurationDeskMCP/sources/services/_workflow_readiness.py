@@ -31,15 +31,17 @@ async def require_model_ready(conn, model_name: Optional[str] = None) -> list[st
     return models
 
 
-async def require_model_ports_ready(conn, model_name: str) -> list[str]:
+async def require_model_port_blocks_ready(conn, model_name: str) -> list[dict[str, str]]:
     await require_model_ready(conn, model_name)
-    ports = await dispatch_observation(model_topology_com.list_model_ports, conn, model_name)
-    if not ports:
+    port_blocks = await dispatch_observation(
+        model_topology_com.list_model_port_blocks, conn, model_name
+    )
+    if not port_blocks:
         raise BridgePreconditionError(
-            f"Model '{model_name}' has no observable model ports yet.",
+            f"Model '{model_name}' has no observable model port blocks yet.",
             recovery_hint="If this is a Simulink model, call `analyze_models` and wait for completion before using port-dependent tools.",
         )
-    return ports
+    return port_blocks
 
 
 async def require_application_process_ready(conn, process_name: Optional[str] = None) -> list[str]:

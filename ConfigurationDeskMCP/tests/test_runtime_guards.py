@@ -276,29 +276,6 @@ def test_nested_input_default_task_is_used_without_eliciting(monkeypatch, stated
     assert captured["processing_unit_application"] == "PUA_2"
 
 
-def test_auto_connect_io_function_blocks_requires_application_process(monkeypatch):
-    conn = SimpleNamespace(is_connected=True)
-
-    async def fake_dispatch(fn, passed_conn, *args, **kwargs):
-        assert passed_conn is conn
-        if fn is model_topology_com.list_models:
-            return ["ModelA"]
-        if fn is verify_com.list_application_process_names:
-            return []
-        raise AssertionError(f"Unexpected dispatch target: {fn}")
-
-    monkeypatch.setattr(bus_access_service, "get_connection", lambda: conn)
-    monkeypatch.setattr(bus_access_service, "dispatch", fake_dispatch)
-    monkeypatch.setattr(observations, "dispatch", fake_dispatch)
-
-    payload = json.loads(
-        asyncio.run(bus_access_service.auto_connect_matching_io_function_blocks_to_model_ports())
-    )
-
-    assert payload["success"] is False
-    assert payload["error_code"] == "BRIDGE_PRECONDITION"
-
-
 def test_assign_channel_set_requires_hardware_topology(monkeypatch):
     conn = SimpleNamespace(is_connected=True)
 

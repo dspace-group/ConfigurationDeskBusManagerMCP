@@ -18,7 +18,7 @@ Guides for the **ConfigurationDesk MCP Server**. Start with the [project README]
 | [windows-executable.md](windows-executable.md) | Download and verify the Windows executable |
 | [small-model-host-profile.md](small-model-host-profile.md) | Host-side tool-selection and safety guidance for small models |
 | prompts/README.md | Prompt coverage and copy-and-adapt workflow requests |
-| prompts/tool-map.md | All 77 tools mapped to a prompt or domain guide |
+| prompts/tool-map.md | All 78 tools mapped to a prompt or domain guide |
 | [../GOVERNANCE.md](../GOVERNANCE.md) | Ownership, contribution, and release policy |
 
 ## Tool reference

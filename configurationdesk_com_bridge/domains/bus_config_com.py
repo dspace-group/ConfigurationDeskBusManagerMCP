@@ -939,13 +939,13 @@ def connect_function_ports_to_model_ports(
     """Removed.
 
     The connect_function_ports_to_model_ports tool was removed because it
-    duplicated auto_connect_matching_io_function_blocks_to_model_ports
+    duplicated auto_connect_function_blocks_to_model_port_blocks
     (in bus_access_com). The remaining stub raises a clear error so any
     accidental import surfaces a usable message.
     """
     raise NotImplementedError(
         "connect_function_ports_to_model_ports has been removed. Use "
-        "auto_connect_matching_io_function_blocks_to_model_ports in "
+        "auto_connect_function_blocks_to_model_port_blocks in "
         "bus_access_com instead."
     )
 

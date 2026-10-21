@@ -105,12 +105,12 @@ jobs:
 
           ### What is included
 
-          The server exposes 77 tools across 12 domains, together with 11
+          The server exposes 78 tools across 12 domains, together with 11
           resources and 15 workflow prompts. It supports:
 
           - ConfigurationDesk startup, diagnostics, lifecycle, save, undo, and redo
           - Project, application, and configuration-tree management
-          - Model topology, model ports, and application-process management
+          - Model topology, model port blocks, and application-process management
           - Hardware-platform setup, imported topology, hardware scanning, and VEOS configuration
           - Communication-matrix import and inspection for ARXML, DBC, and LDF inputs
           - Bus configuration, restbus assignment, features, ports, BSC output, and bus access
