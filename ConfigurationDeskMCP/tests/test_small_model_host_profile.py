@@ -13,7 +13,12 @@ pytest.importorskip("mcp")
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _PROFILE = _REPO_ROOT / "docs" / "small-model-host-profile.md"
 _TOOL_REFERENCE = re.compile(r"`([a-z][a-z0-9_]*)`")
-_NON_TOOL_IDENTIFIERS = {"next_action", "recovery_hint", "provide_default_task"}
+_NON_TOOL_IDENTIFIERS = {
+    "next_action",
+    "recovery_hint",
+    "provide_default_task",
+    "application_process_mode",
+}
 _REQUIRED_RULES = (
     "`start_configurationdesk`",
     "`success=false`",
