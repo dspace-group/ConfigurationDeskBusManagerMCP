@@ -31,8 +31,8 @@ ConfigurationDesk provides a COM-based automation API for HIL (Hardware-in-the-L
 2. **Set Project Root** — Use `set_project_root` to configure where projects are stored
 3. **Create/Open Project** — Use `create_project` or `open_project`
 4. **Add Application** — Use `add_application` within the project
-5. **Add Model** — Use `add_model` to import Simulink (.slx/.mdl), SIC, BSC, or FMU files
-6. **Analyze Models** — Use `analyze_models` to detect ports and interfaces
+5. **Add Model** — Use `add_model` to import one or more Simulink (.slx/.mdl), SIC, BSC, or FMU files. `application_process_mode` selects the application process assignment: `per_model` (default, one preconfigured application process per model), `none`, `existing` (add to an existing application process; optionally run Optimize Configuration), or `new_shared` (one new optimized application process for all models)
+6. **Analyze Models** — Simulink models are analyzed by `add_model`; use `analyze_models` to re-analyze after a model changed
 7. **Add Communication Matrix** — Use `add_communication_matrix` for ARXML/DBC/LDF files
 8. **Configure Bus** — Use `create_bus_configuration` and `assign_matrix_to_bus_config`
 9. **Create Application Process** — Use `create_application_process` (creates an application process; `provide_default_task=true` adds the periodic default task, `false` creates a bare application process, and the value must be sent whenever the request states it — omit it only when it was never stated, which makes the server ask the user; pass `bus_config_names` to also assign it to bus configurations; pass `processing_unit_application` to select the host processing unit application — when omitted, one is created if none exists, the only one is used, or the user is asked when several exist) or `create_preconfigured_application_process` (model-driven)
@@ -617,13 +617,17 @@ names see `configurationdesk://reference/xpath`.
 - `FunctionPort`
 
 ## Model file extensions (add_model)
-- `.slx` / `.mdl` — Simulink (require `analyze_models`).
+- `.slx` / `.mdl` — Simulink (analyzed automatically by `add_model`).
 - `.sic` — Simulink implementation container (pre-analyzed).
 - `.bsc` — Bus simulation container (pre-analyzed). Contains configured bus
   communication. It can be used to implement the bus communication in a
   real-time application (RTA) for SCALEXIO, MicroAutoBox III, or MicroLabBox II,
   or in an offline simulation application (OSA) for VEOS.
 - `.fmu` — Functional Mock-up Unit (pre-analyzed).
+
+`add_model` accepts several files at once. `application_process_mode` selects
+the application process assignment: `per_model` (default), `none`, `existing`,
+or `new_shared`.
 
 `generate_bus_containers` supports only SIC model implementations; FMU and
 Simulink models cannot be used to generate BSC files.
