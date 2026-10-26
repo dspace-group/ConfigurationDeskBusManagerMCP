@@ -10,6 +10,7 @@ from sources.models.model_topology_inputs import (
     AddModelInput,
     AddModelPortBlockToSignalChainInput,
     AddModelToSignalChainInput,
+    ConnectModelPortToModelPortInput,
     CreateApplicationProcessInput,
     ListModelPortBlocksInput,
     ListModelPortsInput,
@@ -441,7 +442,11 @@ async def list_model_port_blocks(input: ListModelPortBlocksInput) -> str:
         "in different subsystems) and the read-only properties ConfigurationDesk exposes: port_type "
         "(In/Out), data_type (e.g. Int8), data_width (vector size; 1 = scalar), signal_id, "
         "description, unit, and variable_size. Properties that do not apply to a port type are "
-        "omitted. "
+        "omitted. `ports` lists the direct children of each block; `leaf_ports` lists every model "
+        "port including ports nested in port groups (structured ports, bus hierarchies of bus "
+        "simulation containers) with its `port_path` inside the block — pass that value as "
+        "source_port_path / target_port_path to connect_model_port_to_model_port. `leaf_ports` is "
+        "paginated: call again with offset = leaf_ports_page.next_offset for later pages. "
         "INPUT: model_name, plus optional port_block_name (bare name or hierarchy path) to restrict "
         "the listing to the matching block(s). "
         "DOES NOT: return block names usable as port_block_name (use list_model_port_blocks), and "
@@ -458,4 +463,59 @@ async def list_model_port_blocks(input: ListModelPortBlocksInput) -> str:
 )
 @with_preconditions("connection", "project", "application", "model")
 async def list_model_ports(input: ListModelPortsInput) -> str:
-    return await svc.list_model_ports(input.model_name, input.port_block_name)
+    return await svc.list_model_ports(
+        input.model_name, input.port_block_name, input.offset, input.limit
+    )
+
+
+@mcp.tool(
+    name="connect_model_port_to_model_port",
+    description=(
+        "[SIGNAL CHAIN — MODEL COMMUNICATION] DECISION RULE: pick this tool when the user asks to "
+        "connect (map) one specific MODEL port to another specific MODEL port, e.g. 'connect port X "
+        "of block A in model M1 to port Y of block B in model M2'. For a function block port "
+        "(I/O or bus function) to a model port, use connect_function_block_port_to_model_port. "
+        "WHAT IT DOES: creates one mapping line exactly like drawing it manually in "
+        "ConfigurationDesk; ConfigurationDesk itself applies its model port mapping rules. "
+        "Blocks that are not yet in the signal chain are added to it by ConfigurationDesk "
+        "(reported in blocks_added_to_signal_chain). "
+        "RESULT STATES: status='compatible' — link created without conflicts; status='warning' — "
+        "link created, `warnings` lists every conflict that appeared with it in the wording of the "
+        "ConfigurationDesk Conflicts Viewer (e.g. 'Model port mapping: Invalid connection between "
+        "data port blocks of same model'); status='unknown' — link created, but its conflicts "
+        "could not be read (`conflicts_read_error`, `note`): do NOT repeat the connection, call "
+        "check_conflicts instead; success=false with status='error' and error_code "
+        "MAPPING_REFUSED — ConfigurationDesk refused the mapping and no link was created; "
+        "`configurationdesk_message` holds ConfigurationDesk's message unchanged; the COM API does "
+        "not report the specific reason. Report warnings and errors to the user verbatim and do "
+        "NOT retry a refused pair. "
+        "SUPPRESSED CONFLICTS: like the Conflicts Viewer and check_conflicts, the tool reports only "
+        "the conflicts ConfigurationDesk generates. Conflicts suppressed in the ConfigurationDesk "
+        "options (by default 'Mismatching data type') are not reported, even though the UI shows a "
+        "warning for them while a mapping line is dragged; clearing \"Suppress the 'Mismatching "
+        "data type' conflict\" in Options → Configuration → Conflict settings makes that conflict "
+        "appear. "
+        "INPUT: for each side the model name, the model port block (bare name or hierarchy path) "
+        "and the port path inside the block ('Port' or 'Group/.../Port' for ports nested in port "
+        "groups). Discover names with list_model_port_blocks and port paths with list_model_ports "
+        "(`leaf_ports[].port_path`). AMBIGUITY: if a block name exists at several hierarchy "
+        "levels, the tool returns AMBIGUOUS_TARGET — ask the user which path they mean. "
+        "PRECONDITION: both models are added and their model port blocks are visible."
+    ),
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    },
+)
+@with_preconditions("connection", "project", "application", "model")
+async def connect_model_port_to_model_port(input: ConnectModelPortToModelPortInput) -> str:
+    return await svc.connect_model_port_to_model_port(
+        input.source_model_name,
+        input.source_port_block_name,
+        input.source_port_path,
+        input.target_model_name,
+        input.target_port_block_name,
+        input.target_port_path,
+    )

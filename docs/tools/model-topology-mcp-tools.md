@@ -18,7 +18,8 @@ ports available for connection, and create application processes.
 | `add_model_to_signal_chain` | Make all model port blocks of one model available for connection. | Use for bulk exposure. |
 | `add_model_port_block_to_signal_chain` | Make one named model port block available. | Use `list_model_port_blocks` first when the name is unknown. Rejects names that exist at several hierarchy levels. |
 | `list_model_port_blocks` | List available model port blocks, including blocks in subsystems, with their hierarchy paths. | Read-only. |
-| `list_model_ports` | List the model ports inside the model port blocks, with their read-only properties. | Read-only; pass `port_block_name` (name or hierarchy path) to scope to matching blocks. |
+| `list_model_ports` | List the model ports inside the model port blocks, with their read-only properties. | Read-only; pass `port_block_name` (name or hierarchy path) to scope to matching blocks. `leaf_ports` (paginated with `offset`/`limit`) also lists ports nested in port groups. |
+| `connect_model_port_to_model_port` | Map one model port to another model port (model communication), like drawing the mapping line manually. | ConfigurationDesk applies its mapping rules; refused mappings create no link. Not idempotent: a second identical call is refused. |
 
 ## Typical Workflow
 
@@ -38,6 +39,7 @@ ports available for connection, and create application processes.
 | One named model port block | `add_model_port_block_to_signal_chain` |
 | Discover exact model port block names | `list_model_port_blocks` |
 | Inspect port direction, data type, or width | `list_model_ports` |
+| Connect one model port to another model port | `connect_model_port_to_model_port` |
 
 ## Model Port Blocks and Model Ports
 
@@ -51,6 +53,57 @@ Use `list_model_port_blocks` when another tool needs a block name. Use
 block properties are read-only in ConfigurationDesk; except for the names of
 unresolved blocks created via function blocks, they can only be changed in the
 behavior model.
+
+Model ports can be nested in port groups inside a block, for example the bus
+hierarchy of a bus simulation container
+(`Restbus_BusConfiguration_Out/In/Simulated ECUs/.../CanBodyCommController Enable`).
+`list_model_ports` returns two lists:
+
+- `ports` and `count`: the direct children of each block (unchanged behavior; a
+  port group appears as one entry without port properties).
+- `leaf_ports`: every model port at any depth, with `port_path` (the path inside
+  its block, e.g. `Group1/Group2/Speed`), `port_block_path`, and `full_path`.
+  `leaf_ports` is paginated; `leaf_ports_page` holds `total_count`,
+  `returned_count`, `offset`, `limit`, and `next_offset`.
+
+## Connecting Model Ports to Model Ports
+
+`connect_model_port_to_model_port` creates one mapping line between two model
+ports, for example `masterAppl / Data Outport1 / data1` to
+`slaveAppl / Data Inport1 / data1`. Each side is given as model name, model port
+block (bare name or hierarchy path), and `port_path` from `leaf_ports`.
+
+The tool calls ConfigurationDesk's `ConnectObjects`, which applies the
+ConfigurationDesk mapping rules itself. The server does not implement any
+mapping rules. The result matches what happens when the mapping line is dropped
+in the UI:
+
+| Result | Meaning |
+|---|---|
+| `status: "compatible"` | The link was created and no conflict appeared with it. |
+| `status: "warning"` | The link was created. `warnings` lists every conflict that appeared with it, with `message` in the wording of the Conflicts Viewer (e.g. `Model port mapping: Invalid connection between data port blocks of same model`) and the `effect` ConfigurationDesk reports (e.g. `Generate no code`). |
+| `status: "unknown"` | The link was created, but the conflict export after connecting failed, so its conflicts could not be read. `success` is `true`; `verified` reports as usual whether the link was confirmed. `conflicts_read_error` holds the error and `note` says so. Do not repeat the connection; call `check_conflicts` to inspect the conflicts. |
+| `success: false`, `status: "error"`, `error_code: "MAPPING_REFUSED"` | ConfigurationDesk refused the mapping (e.g. inport to inport, a duplicate mapping line, or a second source on a connected inport). No link was created. `configurationdesk_message` holds ConfigurationDesk's message unchanged. The ConfigurationDesk COM API does not report the specific reason; the UI shows it only while the mapping line is dragged. |
+
+ConfigurationDesk adds model port blocks that are not yet in the signal chain
+when it connects their ports; the tool lists them in
+`blocks_added_to_signal_chain`. The texts come from the conflict export
+(`ExportConflictsToXML`), the same source as `check_conflicts`.
+
+### Suppressed conflicts
+
+Like the Conflicts Viewer and `check_conflicts`, the tool reports only the
+conflicts that ConfigurationDesk generates. Conflicts suppressed in the
+ConfigurationDesk options are not generated and therefore not reported, even
+though the UI shows a warning for them while a mapping line is dragged.
+
+By default, ConfigurationDesk suppresses the "Mismatching data type" conflict.
+A mapping such as UInt32 → Int32 therefore returns `status: "compatible"`,
+while the UI shows the yellow warning "Model port mapping: Mismatching data
+type" during dragging. To have the conflict reported, clear
+**Suppress the 'Mismatching data type' conflict** in **Options → Configuration →
+Conflict settings**. The conflict then appears in the Conflicts Viewer, in
+`check_conflicts`, and as a warning of this tool.
 
 ## Hierarchy and Ambiguous Names
 
@@ -67,10 +120,14 @@ hierarchy levels (for example `demosmd_io/Wavetable` and
   prefixed with the model name (`demosmd_io/Wavetable` addresses the
   root-level block).
 - If a bare name matches blocks at several hierarchy levels,
-  `add_model_port_block_to_signal_chain` and
-  `connect_function_block_port_to_model_port` change nothing and return
+  `add_model_port_block_to_signal_chain`,
+  `connect_function_block_port_to_model_port`, and
+  `connect_model_port_to_model_port` change nothing and return
   `AMBIGUOUS_TARGET`. The agent must ask the user which path is meant and must
   not pick one itself.
+- Blocks with the same name at the same hierarchy level (for example the inport
+  and outport blocks of an FMU) are told apart by the `port_path` passed to
+  `connect_model_port_to_model_port`.
 
 ## Related Guides
 

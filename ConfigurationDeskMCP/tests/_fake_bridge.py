@@ -49,6 +49,66 @@ def _model_name(path: str) -> str:
     return os.path.splitext(os.path.basename(path))[0]
 
 
+def _connect_model_port_to_model_port(
+    source_model, source_block, source_path, target_model, target_block, target_path
+):
+    """Refuse port paths named 'refused'; same-model links get the UI warning conflict."""
+
+    def endpoint(model, block, path):
+        name = path.split("/")[-1]
+        return {
+            "model_name": model,
+            "port_block_path": f"{model}/{block}",
+            "port_path": path,
+            "port_name": name,
+            "full_path": f"{model}/{block}/{path}",
+        }
+
+    source = endpoint(source_model, source_block, source_path)
+    target = endpoint(target_model, target_block, target_path)
+    if "refused" in (source_path, target_path):
+        return {
+            "error": True,
+            "reason": "connect_refused",
+            "configurationdesk_message": "ConnectObjects\r\nConnectObjects: Cannot connect \r\n; HResult; ",
+            "source": source,
+            "target": target,
+            "detail": "ConfigurationDesk refused to connect.",
+        }
+    conflicts = []
+    if source_model == target_model:
+        conflicts.append(
+            {
+                "context_set": "Model",
+                "name": "Invalid connection between data port blocks of same model",
+                "context": "Model port mapping",
+                "property": "",
+                "value": "",
+                "effect": "Generate no code",
+                "children": [
+                    {
+                        "name": f"Mapping line ({source['port_name']} - {target['port_name']})",
+                        "context": "",
+                        "property": "",
+                        "value": "",
+                        "effect": "",
+                        "children": [
+                            {"name": source["port_name"], "children": []},
+                            {"name": target["port_name"], "children": []},
+                        ],
+                    }
+                ],
+            }
+        )
+    return {
+        "source": source,
+        "target": target,
+        "connected": True,
+        "new_conflicts": conflicts,
+        "blocks_added_to_signal_chain": [],
+    }
+
+
 def dispatch_returns() -> dict[str, Any]:
     """Map every COM domain function name → success-shaped return value.
 
@@ -240,8 +300,35 @@ def dispatch_returns() -> dict[str, Any]:
                     },
                 ],
                 "count": 2,
+                "leaf_ports": [
+                    {
+                        "name": "In1",
+                        "port_path": "In1",
+                        "port_block_name": "In1",
+                        "port_block_path": "demosmd_io/In1",
+                        "full_path": "demosmd_io/In1/In1",
+                        "port_type": "In",
+                    },
+                    {
+                        "name": "Speed",
+                        "port_path": "Bus/Speed",
+                        "port_block_name": "Out1",
+                        "port_block_path": "demosmd_io/Out1",
+                        "full_path": "demosmd_io/Out1/Bus/Speed",
+                        "port_type": "Out",
+                    },
+                    {
+                        "name": "Gear",
+                        "port_path": "Bus/Gear",
+                        "port_block_name": "Out1",
+                        "port_block_path": "demosmd_io/Out1",
+                        "full_path": "demosmd_io/Out1/Bus/Gear",
+                        "port_type": "Out",
+                    },
+                ],
             }
         ),
+        "connect_model_port_to_model_port": _connect_model_port_to_model_port,
         "list_application_process_names": ["AppProcess"],
         # ── hardware_com ──────────────────────────────────────────────────
         "add_hardware_platform": {

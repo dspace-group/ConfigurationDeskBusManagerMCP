@@ -300,7 +300,7 @@ For an application process pre-configured for ONE behavior model, call
 
 @mcp.prompt(
     name="connect_model_port_blocks",
-    description="Single task: wire bus/I/O function ports to behavior-model port blocks (automatic name matching or a specific pair)",
+    description="Single task: wire bus/I/O function ports to behavior-model port blocks (automatic name matching or a specific pair), or connect two model ports",
 )
 def connect_model_port_blocks(
     model_name: str = "plant_model",
@@ -338,6 +338,17 @@ ports to model ports by name across the project.
    If the block name exists at several hierarchy levels (e.g. at the model root and in a
    subsystem), ask the user which one is meant and pass its full path, e.g.
    model_port_block_name="{model_name}/Subsystem/Block".
+
+## Step 4 — Connect a model port to another model port (model communication)
+1. `list_model_ports` for both models; take `port_path` from `leaf_ports` (ports can be
+   nested in port groups, e.g. "Group/Speed").
+2. `connect_model_port_to_model_port` with source_model_name, source_port_block_name,
+   source_port_path, target_model_name, target_port_block_name, target_port_path.
+3. Report the result exactly as returned: status "compatible"; status "warning" with the
+   `warnings` messages; status "unknown" (link created, but its conflicts could not be
+   read; do NOT repeat the connection, call `check_conflicts` instead); or
+   MAPPING_REFUSED with `configurationdesk_message` (no link was created, the reason is
+   not available through the COM API). Do NOT retry a refused pair.
 
 ## Verify
 Call `check_conflicts` to confirm nothing is left unconnected.

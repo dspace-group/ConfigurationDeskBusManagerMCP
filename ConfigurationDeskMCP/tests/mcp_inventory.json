@@ -26,6 +26,7 @@
     "clear_all_working_views",
     "close_project",
     "connect_function_block_port_to_model_port",
+    "connect_model_port_to_model_port",
     "create_application_process",
     "create_bus_configuration",
     "create_io_function_block",

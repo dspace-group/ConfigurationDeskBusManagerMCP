@@ -15,7 +15,7 @@ For ConfigurationDesk product concepts, use the documentation delivered with you
 3. Use the domain pages below to choose tools by outcome.
 4. Check `success`, `verified`, `error_code`, `recovery_hint`, and `next_action`on every response.
 
-The server exposes 78 tools across the 12 domains below.
+The server exposes 79 tools across the 12 domains below.
 
 ## Domain Index
 
@@ -25,7 +25,7 @@ The server exposes 78 tools across the 12 domains below.
 | [Project Management](project-management-mcp-tools.md) | 9 | Project locations, projects, backups |
 | [Application Management](app-management-mcp-tools.md) | 4 | Applications inside a project |
 | [Application Configuration](application-configuration-mcp-tools.md) | 1 | Read-only configuration-tree inspection |
-| [Model Topology](model-topology-mcp-tools.md) | 9 | Behavior models, ports, application processes |
+| [Model Topology](model-topology-mcp-tools.md) | 11 | Behavior models, ports, model-to-model connections, application processes |
 | [Hardware Management](hardware-management-mcp-tools.md) | 8 | Physical platforms, imported topology, VEOS setup |
 | [Communication Matrix](communication-matrix-mcp-tools.md) | 5 | ARXML/DBC/LDF data and matrix properties |
 | [Bus Configuration](bus-configuration-mcp-tools.md) | 12 | Restbus assignment, features, ports, BSC output |

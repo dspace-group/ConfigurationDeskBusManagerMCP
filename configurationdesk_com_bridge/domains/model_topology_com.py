@@ -9,15 +9,23 @@ import logging
 import os
 from typing import Any, Optional
 
+from configurationdesk_com_bridge.domains._conflict_export import (
+    export_conflict_tree,
+    new_conflicts,
+)
 from configurationdesk_com_bridge.domains._model_hierarchy import (
+    PATH_SEPARATOR,
     ModelPortBlockRef,
     ambiguous_hierarchy_error,
     block_identifier,
     collect_model_port_blocks,
     distinct_parent_paths,
     distinct_paths,
+    find_port,
+    iter_leaf_ports,
     match_model_port_blocks,
     names_at_multiple_levels,
+    normalize_block_path,
 )
 from configurationdesk_com_bridge.domains._property_helpers import (
     iter_properties,
@@ -678,6 +686,10 @@ def list_model_ports(
     Pass *port_block_name* (a bare name or a hierarchy path) to restrict the
     result to the matching model port blocks. A bare name matches blocks at
     every hierarchy level; each entry's ``port_block_path`` tells them apart.
+
+    ``ports`` lists the direct children of each block. ``leaf_ports`` lists
+    every model port, including ports nested in port groups, with the
+    ``port_path`` inside its block.
     """
     refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
     if port_block_name:
@@ -708,9 +720,191 @@ def list_model_ports(
             entry.update(_read_model_port_properties(port))
             ports.append(entry)
 
+    leaf_ports: list[dict[str, Any]] = []
+    for ref in refs_to_scan:
+        for path, port in iter_leaf_ports(ref.block):
+            port_path = PATH_SEPARATOR.join(path)
+            entry = {
+                "name": path[-1],
+                "port_path": port_path,
+                "port_block_name": ref.name,
+                "port_block_path": ref.path,
+                "full_path": f"{ref.path}{PATH_SEPARATOR}{port_path}",
+            }
+            entry.update(_read_model_port_properties(port))
+            leaf_ports.append(entry)
+
     return {
         "model_name": model_name,
         "port_blocks_scanned": scanned,
         "ports": ports,
         "count": len(ports),
+        "leaf_ports": leaf_ports,
     }
+
+
+def _resolve_port_endpoint(
+    connection, model_name: str, port_block_name: str, port_path: str
+) -> dict[str, Any]:
+    """Resolve ``model / model port block / port path`` to one model port.
+
+    Returns the endpoint, or an ``{"error": True, ...}`` dict. Blocks with the
+    same name at the same hierarchy level (e.g. the inport and outport blocks
+    of an FMU) are told apart by *port_path*.
+    """
+    refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
+    matches = match_model_port_blocks(refs, model_name, port_block_name)
+    if not matches:
+        return _model_port_block_not_found(model_name, port_block_name, refs)
+    if len(distinct_parent_paths(matches)) > 1:
+        return ambiguous_hierarchy_error(model_name, port_block_name, matches)
+
+    found = []
+    for ref in matches:
+        port = find_port(ref.block, port_path)
+        if port is not None:
+            found.append((ref, port))
+    if len(found) != 1:
+        available = [
+            PATH_SEPARATOR.join(path) for ref in matches for path, _ in iter_leaf_ports(ref.block)
+        ]
+        block_path = matches[0].path
+        if not found:
+            return {
+                "error": True,
+                "reason": "model_port_not_found",
+                "available_port_paths": available,
+                "detail": (
+                    f"Model port '{port_path}' not found in model port block '{block_path}'."
+                ),
+            }
+        return {
+            "error": True,
+            "reason": "ambiguous_model_port",
+            "available_port_paths": available,
+            "detail": (
+                f"Model port '{port_path}' exists {len(found)} times in the model port blocks "
+                f"at '{block_path}'."
+            ),
+        }
+
+    ref, port = found[0]
+    normalized = normalize_block_path(port_path)
+    return {
+        "model_name": model_name,
+        "port_block_path": ref.path,
+        "port_path": normalized,
+        "port_name": normalized.split(PATH_SEPARATOR)[-1],
+        "full_path": f"{ref.path}{PATH_SEPARATOR}{normalized}",
+        "_block": ref.block,
+        "_port": port,
+    }
+
+
+def _public(endpoint: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in endpoint.items() if not key.startswith("_")}
+
+
+def _is_in_application(block: Any) -> bool:
+    try:
+        return bool(block.IsInApplication)
+    except Exception:
+        return False
+
+
+def _same_object(first: Any, second: Any) -> bool:
+    try:
+        return bool(first.Equals(second))
+    except Exception:
+        return first is second
+
+
+def _is_connected(port: Any, other: Any) -> bool:
+    try:
+        connected = list(port.ConnectedObjects)
+    except Exception:
+        return False
+    return any(_same_object(obj, other) for obj in connected)
+
+
+def _com_error_message(exc: Exception) -> str:
+    """Return the description ConfigurationDesk attached to a COM exception."""
+    excepinfo = getattr(exc, "excepinfo", None)
+    if excepinfo is None and len(getattr(exc, "args", ())) > 2:
+        excepinfo = exc.args[2]
+    if isinstance(excepinfo, tuple) and len(excepinfo) > 2 and excepinfo[2]:
+        return str(excepinfo[2])
+    return str(exc)
+
+
+def connect_model_port_to_model_port(
+    connection,
+    source_model_name: str,
+    source_port_block_name: str,
+    source_port_path: str,
+    target_model_name: str,
+    target_port_block_name: str,
+    target_port_path: str,
+) -> dict[str, Any]:
+    """Map one model port to another model port, as a manual mapping line does.
+
+    ``ActiveApplication.ConnectObjects`` applies ConfigurationDesk's mapping
+    rules itself: mappings the UI marks red are refused with an exception that
+    does not name the violated rule. For a created link, the conflicts that
+    appeared with it are read from the conflict export, which carries the
+    Conflicts Viewer texts. ConnectObjects also adds blocks that are not yet in
+    the signal chain.
+
+    Domain ref: ConfigurationDesk Automating Tool Handling,
+    ICaActiveApplication.ConnectObjects and ICaAlgorithms.ExportConflictsToXML;
+    ConfigurationDesk Real-Time Implementation Guide, "Methods for Model Port
+    Mapping".
+    """
+    source = _resolve_port_endpoint(
+        connection, source_model_name, source_port_block_name, source_port_path
+    )
+    if source.get("error"):
+        return {**source, "endpoint": "source"}
+    target = _resolve_port_endpoint(
+        connection, target_model_name, target_port_block_name, target_port_path
+    )
+    if target.get("error"):
+        return {**target, "endpoint": "target"}
+
+    endpoints = (source, target)
+    in_application_before = [_is_in_application(e["_block"]) for e in endpoints]
+    conflicts_before = export_conflict_tree(connection)
+    try:
+        connection.active.ConnectObjects(source["_port"], target["_port"])
+    except Exception as exc:
+        message = _com_error_message(exc)
+        if "ConnectObjects: Cannot connect" not in message:
+            raise
+        return {
+            "error": True,
+            "reason": "connect_refused",
+            "configurationdesk_message": message,
+            "source": _public(source),
+            "target": _public(target),
+            "detail": (
+                f"ConfigurationDesk refused to connect '{source['full_path']}' to "
+                f"'{target['full_path']}': {' '.join(message.split())}"
+            ),
+        }
+
+    added = [
+        endpoint["port_block_path"]
+        for endpoint, was_in_application in zip(endpoints, in_application_before)
+        if not was_in_application and _is_in_application(endpoint["_block"])
+    ]
+    result = {
+        "source": _public(source),
+        "target": _public(target),
+        "connected": _is_connected(source["_port"], target["_port"]),
+        "blocks_added_to_signal_chain": list(dict.fromkeys(added)),
+    }
+    try:
+        result["new_conflicts"] = new_conflicts(conflicts_before, export_conflict_tree(connection))
+    except Exception as exc:
+        result["conflicts_read_error"] = _com_error_message(exc)
+    return result

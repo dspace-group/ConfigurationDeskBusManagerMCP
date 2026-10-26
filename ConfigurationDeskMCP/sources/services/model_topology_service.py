@@ -12,6 +12,7 @@ from configurationdesk_com_bridge.errors import BridgeError
 from sources.models.envelope_builder import tool_error_result
 from sources.services._model_port_blocks import ambiguous_model_port_block_response
 from sources.services._observations import dispatch_observation
+from sources.services._pagination import DEFAULT_PAGE_LIMIT, paginate
 from sources.services._workflow_readiness import (
     require_model_port_blocks_ready,
     require_model_ready,
@@ -347,7 +348,12 @@ async def list_model_port_blocks(model_name: str) -> str:
         return error_response(str(e), transient=False)
 
 
-async def list_model_ports(model_name: str, port_block_name: Optional[str] = None) -> str:
+async def list_model_ports(
+    model_name: str,
+    port_block_name: Optional[str] = None,
+    offset: int = 0,
+    limit: int = DEFAULT_PAGE_LIMIT,
+) -> str:
     try:
         conn = get_connection()
         await require_model_port_blocks_ready(conn, model_name)
@@ -356,11 +362,145 @@ async def list_model_ports(model_name: str, port_block_name: Optional[str] = Non
         )
         if result.get("error"):
             return _port_block_error_response(result)
-        return success_response(**result)
+        result = dict(result)
+        page = paginate(result.pop("leaf_ports", []), offset=offset, limit=limit)
+        page_metadata = page.response_metadata()
+        # `count` already describes `ports` in this response.
+        page_metadata.pop("count")
+        return success_response(**result, leaf_ports=page.items, leaf_ports_page=page_metadata)
     except BridgeError as exc:
         return tool_error_result(exc)
     except Exception as e:
         logger.exception("Error listing model ports")
+        return error_response(str(e), transient=False)
+
+
+_REFUSAL_NOTE = (
+    "The ConfigurationDesk COM API does not report the specific reason why a mapping is refused."
+)
+
+
+def _involves_ports(item: dict, port_names: set[str]) -> bool:
+    names: set[str] = set()
+    pending = [item]
+    while pending:
+        node = pending.pop()
+        names.add(node.get("name", ""))
+        pending.extend(node.get("children", []))
+    return port_names <= names
+
+
+def _link_warnings(result: dict) -> list[dict[str, str]]:
+    """Conflicts that appeared with the new link, worded as in the Conflicts Viewer."""
+    port_names = {result["source"]["port_name"], result["target"]["port_name"]}
+    warnings = []
+    for conflict in result.get("new_conflicts", []):
+        if not _involves_ports(conflict, port_names):
+            continue
+        name, context = conflict.get("name", ""), conflict.get("context", "")
+        warnings.append(
+            {
+                "message": f"{context}: {name}" if context else name,
+                "effect": conflict.get("effect", ""),
+            }
+        )
+    return warnings
+
+
+def _connect_error_response(result: dict) -> str:
+    reason = result.get("reason")
+    if reason == "connect_refused":
+        return error_response(
+            f"{result['detail']} {_REFUSAL_NOTE}",
+            transient=False,
+            error_code="MAPPING_REFUSED",
+            recovery_hint=(
+                "ConfigurationDesk applies its model port mapping rules when connecting and "
+                "created no link. In the UI the same mapping shows a red mapping line."
+            ),
+            next_action=(
+                "Do NOT retry the same pair. Report ConfigurationDesk's message to the user. "
+                "`list_model_ports` shows each port's port_type and data type to help the user "
+                "choose a different pair."
+            ),
+            status="error",
+            configurationdesk_message=result["configurationdesk_message"],
+            source=result["source"],
+            target=result["target"],
+        )
+    if reason == "ambiguous_model_port_block_hierarchy":
+        return ambiguous_model_port_block_response(result["detail"], result.get("candidates", []))
+    if reason in {"model_port_not_found", "ambiguous_model_port"}:
+        return error_response(
+            result["detail"],
+            transient=False,
+            next_action=(
+                f"Retry with a {result.get('endpoint', '')} port path from the available port "
+                f"paths {result.get('available_port_paths', [])}, or call `list_model_ports` and "
+                "use `port_path` from `leaf_ports`."
+            ),
+        )
+    return _port_block_error_response(result)
+
+
+async def connect_model_port_to_model_port(
+    source_model_name: str,
+    source_port_block_name: str,
+    source_port_path: str,
+    target_model_name: str,
+    target_port_block_name: str,
+    target_port_path: str,
+) -> str:
+    try:
+        conn = get_connection()
+        for model_name in dict.fromkeys((source_model_name, target_model_name)):
+            await require_model_port_blocks_ready(conn, model_name)
+        result = await dispatch(
+            model_topology_com.connect_model_port_to_model_port,
+            conn,
+            source_model_name,
+            source_port_block_name,
+            source_port_path,
+            target_model_name,
+            target_port_block_name,
+            target_port_path,
+        )
+        if result.get("error"):
+            return _connect_error_response(result)
+
+        warnings = _link_warnings(result)
+        message = (
+            f"Connected '{result['source']['full_path']}' to '{result['target']['full_path']}'"
+        )
+        if warnings:
+            message += f" with {len(warnings)} warning(s)"
+        payload = {
+            "status": "warning" if warnings else "compatible",
+            "source": result["source"],
+            "target": result["target"],
+            "warnings": warnings,
+            "blocks_added_to_signal_chain": result.get("blocks_added_to_signal_chain", []),
+        }
+        if "conflicts_read_error" in result:
+            note = (
+                "The connection was created, but its conflicts could not be read. "
+                "Do not repeat the connection; use `check_conflicts` to inspect conflicts."
+            )
+            payload.update(
+                status="unknown",
+                note=note,
+                conflicts_read_error=result["conflicts_read_error"],
+            )
+            message += " (conflicts could not be read)"
+        if result.get("connected"):
+            return success_response(message=message, verified=True, **payload)
+        return unverified_response(
+            message=message + " (issued, but the link could not be confirmed)", **payload
+        )
+    except BridgeError as exc:
+        return tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error connecting model port to model port")
         return error_response(str(e), transient=False)
 
 

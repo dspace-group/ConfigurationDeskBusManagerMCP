@@ -138,6 +138,7 @@ prerequisites.
 - Ask the user only when the named PDU/signal scope is materially ambiguous across multiple ECUs/clusters or the instructions conflict.
 - Model port blocks can be nested in subsystems, so one name (e.g. `Wavetable`) can exist at several hierarchy levels. If a tool returns `AMBIGUOUS_TARGET` or `list_model_port_blocks` shows the name under `ambiguous_names`, ask the user which hierarchy path they mean — never pick one yourself — then retry with that full path.
 - "Set baud rate" → `set_io_function_block_property` (this is a hardware I/O setting, not bus config)
+- "Connect model port X to model port Y" (model communication, model port block → model port block) → `connect_model_port_to_model_port` (NOT `connect_function_block_port_to_model_port`). Report its warnings and refusals verbatim; do NOT retry a pair ConfigurationDesk refused.
 - "Set function port property" or "set IsMappable / InitialValue on a port" → `set_function_port_property`
 - Do NOT call `generate_bus_containers` just to inspect, list, or set function port properties. Function ports are exposed by assigned bus features; use `find_bus_config_elements` and `set_function_port_property` first.
 - If `set_function_port_property` fails because ports or property nodes are missing, call `find_bus_config_elements` and verify the assigned bus features / exact port XPath. Do NOT use `generate_bus_containers` as recovery for that failure.
