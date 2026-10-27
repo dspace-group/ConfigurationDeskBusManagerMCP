@@ -71,18 +71,17 @@ Simulink models are analyzed while being added. ConfigurationDesk creates an
 application process pre-configured for the model; tasks that match the requirements
 of the model are created and/or configured appropriately. The response lists the
 model name in `added` and its application process in `assignments`.
-Then `add_model_to_signal_chain` to expose the model port blocks.
-
-## Step 6 — Assign the bus configuration to the application process
 If no Processing Unit Application exists, `add_model` creates one. If exactly one
 exists, the application process is added to it. If several exist, pass
 `processing_unit_application` or let the server ask the user.
-
-Assign the bus configuration to the application process from Step 5 with
-`assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
-If the model was already added without an application process, call
+After `add_model` completes, call `add_model_to_signal_chain` to expose the model
+port blocks. If the model was added without an application process, call
 `create_preconfigured_application_process` with the model's name (use `list_models`)
 before assigning the bus configuration.
+
+## Step 6 — Assign the bus configuration to the application process
+Assign the bus configuration to the application process from Step 5 with
+`assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
 
 For a model-less restbus application process instead, call `create_application_process` with
 `provide_default_task=true` — it auto-assigns to "{bus_config_name}".
