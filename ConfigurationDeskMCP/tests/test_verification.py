@@ -300,42 +300,104 @@ class TestListModelNames:
 
 
 class TestModelTopologyVerification:
-    def test_add_model_reports_added_names(self, monkeypatch):
+    @staticmethod
+    def _patch_observations(monkeypatch, model_names, process_names):
+        model_reads = iter(model_names)
+        process_reads = iter(process_names)
+        monkeypatch.setattr(model_topology_com, "list_model_names", lambda _c: next(model_reads))
+        monkeypatch.setattr(
+            model_topology_com, "list_application_process_names", lambda _c: next(process_reads)
+        )
+        monkeypatch.setattr(
+            model_topology_com,
+            "wait_for_state",
+            lambda read, predicate, timeout_s: (predicate(value := read()), value),
+        )
+        monkeypatch.setattr(model_topology_com, "_com_array", list)
+
+    def test_add_models_uses_one_description_per_model(self, monkeypatch):
         configured = []
 
         class _FakeTopology:
             def Configure(self, action, args):
                 configured.append((action, args))
+                if action == "CreateModelDescription":
+                    return SimpleNamespace(FilePath="", AnalyzeComplete=True)
+                return None
 
         connection = SimpleNamespace(model_topology=_FakeTopology())
-        observed_names = iter(
-            [
-                ["ExistingModel"],
-                ["ExistingModel", "AddedModel"],
-            ]
-        )
-
-        monkeypatch.setattr(
-            model_topology_com,
-            "list_model_names",
-            lambda _connection: next(observed_names),
+        self._patch_observations(
+            monkeypatch,
+            [["Existing"], ["Existing", "Plant", "Ecu"]],
+            [["Existing_AP"], ["Existing_AP", "Plant", "Ecu"], ["Existing_AP", "Plant", "Ecu"]],
         )
         monkeypatch.setattr(
             model_topology_com,
-            "wait_for_new_names",
-            lambda read_names, before_names, timeout_s: (
-                True,
-                ["AddedModel"],
-                read_names(),
-            ),
+            "list_model_assignments",
+            lambda _c: {"Existing_AP": ["Existing"], "Plant": ["Plant"], "Ecu": ["Ecu"]},
         )
 
-        result = model_topology_com.add_model(connection, "demo.sic", analyze=True)
+        result = model_topology_com.add_models(
+            connection,
+            [("C:/m/Plant.slx", True), ("C:/m/Ecu.fmu", False)],
+            model_topology_com.AP_ONE_FOR_EACH,
+        )
 
+        assert [action for action, _ in configured] == [
+            "CreateModelDescription",
+            "CreateModelDescription",
+            "AddModels",
+        ]
+        mode, *descriptions = configured[-1][1]
+        assert mode == model_topology_com.AP_ONE_FOR_EACH
+        assert [(d.FilePath, d.AnalyzeComplete) for d in descriptions] == [
+            ("C:/m/Plant.slx", True),
+            ("C:/m/Ecu.fmu", False),
+        ]
         assert result["verified"] is True
-        assert result["added"] == ["AddedModel"]
-        assert result["all_models"] == ["AddedModel", "ExistingModel"]
-        assert configured == [("AddModel", [os.path.abspath("demo.sic"), False, "", True])]
+        assert result["added"] == ["Plant", "Ecu"]
+        assert result["created_processes"] == ["Plant", "Ecu"]
+        assert result["assignments"] == {"Plant": ["Plant"], "Ecu": ["Ecu"]}
+
+    def test_add_models_to_application_process_continues_after_failure(self, monkeypatch):
+        configured = []
+        optimized = []
+
+        class _FakeTopology:
+            def Configure(self, action, args):
+                configured.append((action, args))
+                if args[0].endswith("Dup.fmu"):
+                    raise RuntimeError("Model already present.")
+
+        process = SimpleNamespace(Name="Target_AP")
+        connection = SimpleNamespace(
+            model_topology=_FakeTopology(),
+            algorithms=SimpleNamespace(OptimizeConfiguration=optimized.append),
+        )
+        self._patch_observations(monkeypatch, [["Dup"], ["Dup", "Plant"]], [])
+        monkeypatch.setattr(
+            model_topology_com, "_find_application_process", lambda _c, name: process
+        )
+        monkeypatch.setattr(
+            model_topology_com,
+            "list_model_assignments",
+            lambda _c: {"Target_AP": ["Dup", "Plant"]},
+        )
+
+        result = model_topology_com.add_models_to_application_process(
+            connection, [("C:/m/Dup.fmu", False), ("C:/m/Plant.slx", True)], "Target_AP"
+        )
+
+        assert configured == [
+            ("AddModel", ["C:/m/Dup.fmu", False, "", False, "Target_AP"]),
+            ("AddModel", ["C:/m/Plant.slx", True, "", False, "Target_AP"]),
+        ]
+        assert result["added"] == ["Plant"]
+        assert result["failed"] == [{"path": "C:/m/Dup.fmu", "detail": "Model already present."}]
+        assert result["verified"] is False
+        assert result["optimized"] is True
+        assert optimized == [[process]]
+        assert result["assignments"] == {"Plant": ["Target_AP"]}
 
     def test_remove_model_uses_remaining_names_for_verification(self, monkeypatch):
         configured = []

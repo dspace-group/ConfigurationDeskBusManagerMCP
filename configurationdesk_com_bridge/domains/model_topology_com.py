@@ -24,35 +24,257 @@ from configurationdesk_com_bridge.domains._property_helpers import (
     normalize_property_name,
 )
 from configurationdesk_com_bridge.domains.verify_com import (
+    _iter_com_items,
     list_application_process_names,
     list_model_names,
-    wait_for_new_names,
     wait_for_state,
 )
 
 _log = logging.getLogger(__name__)
 
+# ``ApplicationProcessToModel`` enumeration used by the ModelTopology ``AddModels`` operation.
+AP_ONE_FOR_EACH = 0
+AP_ONE_FOR_ALL = 1
+AP_NONE = 2
 
-def add_model(
-    connection, path: str, analyze: bool = True, create_preconfigured: bool = True
-) -> dict[str, Any]:
-    """Add a model file to the project."""
-    abs_path = os.path.abspath(path)
-    mt = connection.model_topology
-    if abs_path.endswith((".sic", ".bsc", ".fmu")):
-        analyze = False
-    before = list_model_names(connection)
-    mt.Configure("AddModel", [abs_path, analyze, "", create_preconfigured])
-    verified, added, all_models = wait_for_new_names(
+_IMPLEMENTATION_ROLE = "ImplementationPackage"
+
+
+def _com_array(items: list[Any]):
+    import pythoncom  # noqa: PLC0415
+    import win32com.client  # noqa: PLC0415
+
+    return win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_VARIANT, list(items))
+
+
+def _iter_application_processes(atm_relation):
+    try:
+        top_nodes = list(atm_relation.GetTopNodes())
+    except Exception:
+        return
+    for top in top_nodes:
+        for element in _iter_relation_descendants(atm_relation, top):
+            try:
+                roles = list(element.Roles)
+            except Exception:
+                continue
+            if "ApplicationProcess" in roles:
+                yield element
+
+
+def _find_application_process(connection, name: str):
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception:
+        return None
+    for process in _iter_application_processes(atm_relation):
+        if _element_name(process) == name:
+            return process
+    return None
+
+
+def list_model_assignments(connection) -> dict[str, list[str]]:
+    """Map every application process name to the model implementations assigned to it."""
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception:
+        return {}
+    assignments: dict[str, list[str]] = {}
+    for process in _iter_application_processes(atm_relation):
+        models: list[str] = []
+        try:
+            children = list(atm_relation.GetElements(process))
+        except Exception:
+            children = []
+        for child in children:
+            try:
+                roles = list(child.Roles)
+            except Exception:
+                continue
+            if _IMPLEMENTATION_ROLE in roles:
+                models.append(_element_name(child))
+        assignments[_element_name(process)] = models
+    return assignments
+
+
+def _models_to_processes(connection, model_names: list[str]) -> dict[str, list[str]]:
+    wanted = set(model_names)
+    result: dict[str, list[str]] = {name: [] for name in model_names}
+    for process, models in list_model_assignments(connection).items():
+        for model in models:
+            if model in wanted:
+                result[model].append(process)
+    return result
+
+
+def _wait_for_added_models(connection, before: list[str], expected: int):
+    before_set = set(before)
+    verified, current = wait_for_state(
         lambda: list_model_names(connection),
-        before,
+        lambda names: len(set(names) - before_set) >= expected,
         timeout_s=120.0,
     )
+    added = [name for name in current if name not in before_set]
+    return verified, added, current
+
+
+def add_models(
+    connection,
+    models: list[tuple[str, bool]],
+    application_process_mode: int = AP_ONE_FOR_EACH,
+    shared_process_name: Optional[str] = None,
+) -> dict[str, Any]:
+    """Add model files in one ``AddModels`` call.
+
+    *models* holds ``(absolute_path, analyze_complete)`` pairs.
+    *application_process_mode* is an ``ApplicationProcessToModel`` value. With
+    ``AP_ONE_FOR_ALL`` the created application process is renamed to
+    *shared_process_name* when given.
+    """
+    mt = connection.model_topology
+    before_models = list_model_names(connection)
+    before_processes = set(list_application_process_names(connection))
+
+    descriptions = []
+    for path, analyze in models:
+        description = mt.Configure("CreateModelDescription", [])
+        description.FilePath = path
+        description.AnalyzeComplete = bool(analyze)
+        descriptions.append(description)
+    mt.Configure("AddModels", [application_process_mode, *descriptions])
+
+    verified, added, all_models = _wait_for_added_models(connection, before_models, len(models))
+    if application_process_mode != AP_NONE:
+        wait_for_state(
+            lambda: list_application_process_names(connection),
+            lambda names: bool(set(names) - before_processes),
+            timeout_s=30.0,
+        )
+    created = [
+        name for name in list_application_process_names(connection) if name not in before_processes
+    ]
+
+    rename_detail = ""
+    if application_process_mode == AP_ONE_FOR_ALL and shared_process_name and len(created) == 1:
+        process = _find_application_process(connection, created[0])
+        try:
+            process.Name = shared_process_name
+            created = [_element_name(process) or shared_process_name]
+        except Exception as exc:
+            rename_detail = f"Could not rename '{created[0]}' to '{shared_process_name}': {exc}"
+
     return {
-        "path": abs_path,
         "added": added,
         "verified": verified,
         "all_models": sorted(all_models),
+        "created_processes": created,
+        "assignments": _models_to_processes(connection, added),
+        "rename_detail": rename_detail,
+    }
+
+
+def add_models_to_application_process(
+    connection,
+    models: list[tuple[str, bool]],
+    application_process_name: str,
+    optimize: bool = True,
+) -> dict[str, Any]:
+    """Add model files one by one to an existing application process.
+
+    Uses the ``AddModel`` operation with the application process as fifth
+    parameter. A failing model does not stop the remaining ones. With
+    *optimize*, ``Algorithms.OptimizeConfiguration`` is run on the application
+    process afterwards so the new runnable functions are assigned to tasks.
+    """
+    mt = connection.model_topology
+    before_models = list_model_names(connection)
+    failed: list[dict[str, str]] = []
+    issued = 0
+    for path, analyze in models:
+        try:
+            mt.Configure("AddModel", [path, bool(analyze), "", False, application_process_name])
+            issued += 1
+        except Exception as exc:
+            failed.append({"path": path, "detail": str(exc)})
+
+    verified, added, all_models = (
+        _wait_for_added_models(connection, before_models, issued)
+        if issued
+        else (False, [], before_models)
+    )
+
+    optimized = False
+    optimize_detail = ""
+    if optimize and added:
+        process = _find_application_process(connection, application_process_name)
+        if process is None:
+            optimize_detail = f"Application process '{application_process_name}' not found."
+        else:
+            try:
+                connection.algorithms.OptimizeConfiguration(_com_array([process]))
+                optimized = True
+            except Exception as exc:
+                optimize_detail = f"OptimizeConfiguration failed: {exc}"
+
+    return {
+        "application_process": application_process_name,
+        "added": added,
+        "failed": failed,
+        "verified": verified and not failed,
+        "all_models": sorted(all_models),
+        "assignments": _models_to_processes(connection, added),
+        "optimized": optimized,
+        "optimize_detail": optimize_detail,
+    }
+
+
+def create_preconfigured_application_processes(
+    connection, model_names: list[str], processing_unit_application_name: str
+) -> dict[str, Any]:
+    """Create one preconfigured application process per model on a given processing unit application.
+
+    Uses ``Algorithms.CreatePreConfiguredApplicationProcessAutomatically`` with
+    the processing unit application as parent.
+    """
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception as exc:
+        return {"error": True, "detail": f"ApplicationConfiguration relation not available: {exc}"}
+    pua, detail = _resolve_processing_unit_application(
+        connection, atm_relation, processing_unit_application_name
+    )
+    if pua is None:
+        return {"error": True, "detail": detail}
+
+    wanted = set(model_names)
+    model_objects = []
+    for model in _iter_com_items(connection.model_topology):
+        try:
+            if model.Name in wanted:
+                model_objects.append(model)
+        except Exception:
+            continue
+    if len(model_objects) != len(wanted):
+        found = {_element_name(model) for model in model_objects}
+        return {
+            "error": True,
+            "detail": f"Models not found in the model topology: {sorted(wanted - found)}.",
+        }
+
+    before_processes = set(list_application_process_names(connection))
+    connection.algorithms.CreatePreConfiguredApplicationProcessAutomatically(
+        _com_array(model_objects), pua
+    )
+    verified, processes_after = wait_for_state(
+        lambda: list_application_process_names(connection),
+        lambda names: len(set(names) - before_processes) >= len(model_objects),
+        timeout_s=120.0,
+    )
+    return {
+        "verified": verified,
+        "processing_unit_application": _element_name(pua),
+        "created_processes": [name for name in processes_after if name not in before_processes],
+        "assignments": _models_to_processes(connection, model_names),
     }
 
 

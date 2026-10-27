@@ -66,22 +66,21 @@ This exposes function ports: In ports for TX signals, Out ports for RX signals.
 For other features, see the `configurationdesk://reference/features` resource.
 
 ## Step 5 — Add the behavior model
-Call `add_model` with path="{model_path}".
-For .slx/.mdl also call `analyze_models`; .sic/.bsc are already analyzed.
-Then `add_model_to_signal_chain` to expose the model port blocks.
+Call `add_model` with paths=["{model_path}"] and application_process_mode="per_model".
+Simulink models are analyzed while being added. ConfigurationDesk creates an
+application process pre-configured for the model; tasks that match the requirements
+of the model are created and/or configured appropriately. The response lists the
+model name in `added` and its application process in `assignments`.
+If no Processing Unit Application exists, `add_model` creates one. If exactly one
+exists, the application process is added to it. If several exist, pass
+`processing_unit_application` or let the server ask the user.
+After `add_model` completes, call `add_model_to_signal_chain` to expose the model
+port blocks. If the model was added without an application process, call
+`create_preconfigured_application_process` with the model's name (use `list_models`)
+before assigning the bus configuration.
 
-## Step 6 — Create the application process and assign the model
-When creating an application process, a Processing Unit Application should be 
-automatically created if one does not already exist. If exactly one Processing Unit 
-Application exists, the Application Process should be added to it.
-
-Assign the behavior model from Step 5 by calling
-`create_preconfigured_application_process` with the model's name (use `list_models` to
-get the exact name of "{model_path}"). This creates an application process pre-configured
-for that model. Tasks that match the requirements of the model are created and/or 
-configured appropriately.
-
-Then assign the bus configuration to that application process with
+## Step 6 — Assign the bus configuration to the application process
+Assign the bus configuration to the application process from Step 5 with
 `assign_bus_config_to_application_process` (bus_config_name="{bus_config_name}").
 
 For a model-less restbus application process instead, call `create_application_process` with

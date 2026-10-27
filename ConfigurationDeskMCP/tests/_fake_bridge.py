@@ -99,6 +99,48 @@ def dispatch_returns() -> dict[str, Any]:
             "created_processes": [process_name],
         }
 
+    def _add_models(models, application_process_mode=0, shared_process_name=None):
+        assert models and all(isinstance(path, str) and isinstance(a, bool) for path, a in models)
+        added = [_model_name(path) for path, _ in models]
+        if application_process_mode == 0:
+            created = list(added)
+            assignments = {name: [name] for name in added}
+        elif application_process_mode == 1:
+            created = [shared_process_name or "ApplicationProcess_1"]
+            assignments = {name: list(created) for name in added}
+        else:
+            created = []
+            assignments = {name: [] for name in added}
+        return {
+            "added": added,
+            "verified": True,
+            "all_models": sorted(added),
+            "created_processes": created,
+            "assignments": assignments,
+            "rename_detail": "",
+        }
+
+    def _add_models_to_application_process(models, application_process_name, optimize=True):
+        added = [_model_name(path) for path, _ in models]
+        return {
+            "application_process": application_process_name,
+            "added": added,
+            "failed": [],
+            "verified": True,
+            "all_models": sorted(added),
+            "assignments": {name: [application_process_name] for name in added},
+            "optimized": bool(optimize),
+            "optimize_detail": "",
+        }
+
+    def _create_preconfigured_application_processes(model_names, processing_unit_application):
+        return {
+            "verified": True,
+            "processing_unit_application": processing_unit_application,
+            "created_processes": list(model_names),
+            "assignments": {name: [name] for name in model_names},
+        }
+
     return {
         # ── application_com / connection ──────────────────────────────────
         "disconnect": True,
@@ -184,11 +226,9 @@ def dispatch_returns() -> dict[str, Any]:
         },
         "assign_to_application_process": {"verified": True, "process": "AppProcess"},
         # ── model_topology_com ────────────────────────────────────────────
-        "add_model": lambda path, *a: {
-            "verified": True,
-            "added": [_model_name(path)],
-            "all_models": [_model_name(path)],
-        },
+        "add_models": _add_models,
+        "add_models_to_application_process": _add_models_to_application_process,
+        "create_preconfigured_application_processes": _create_preconfigured_application_processes,
         "replace_model": {"replaced_path": "demo.sic"},
         "remove_model": {"verified": True},
         "analyze_models": {},
