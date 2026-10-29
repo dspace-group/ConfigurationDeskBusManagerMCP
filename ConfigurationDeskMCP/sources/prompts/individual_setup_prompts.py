@@ -317,6 +317,9 @@ and the model port blocks in the signal chain.
 ## Prerequisite
 - The model port blocks are in the signal chain (see `add_behavior_model`).
 - Function blocks/ports exist (bus features or I/O function blocks).
+- If a model port block is named without its model, find the model with `list_models`
+  and `list_model_port_blocks` for each model — do NOT ask the user. Ask only when
+  several models or hierarchy levels contain the name.
 
 ## Step 1 — Make bus function ports mappable (if needed)
 Call `set_function_port_property` with property_name="IsMappable", value=true,

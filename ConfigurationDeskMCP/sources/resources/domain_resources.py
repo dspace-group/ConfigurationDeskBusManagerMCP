@@ -577,6 +577,10 @@ explicitly requested.
   verify the actual ports/features. `generate_bus_containers` is NOT recovery.
 - Feature-node vs function port vs matrix vs hardware property setters are four
   DIFFERENT tools — see the table above.
+- Model port block named without its model: call `list_models`, then
+  `list_model_port_blocks` for each model, and use the model that contains the
+  block. Do NOT ask the user which model it belongs to; ask only when several
+  models or hierarchy levels contain the name.
 """
 
 _VALID_VALUES_REFERENCE = """\

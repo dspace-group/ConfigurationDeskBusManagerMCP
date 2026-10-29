@@ -320,7 +320,10 @@ async def create_application_process(
     name="list_models",
     description=(
         "List all models in the project with their names and file paths. "
-        "Shows the model topology including which models are loaded and their analysis state."
+        "Shows the model topology including which models are loaded and their analysis state. "
+        "OWNER LOOKUP: when the user names a model port block or model port without its model, "
+        "call this tool, then list_model_port_blocks for each model, and use the model that "
+        "contains the block — do NOT ask the user which model contains it."
     ),
     annotations={
         "readOnlyHint": True,
@@ -378,7 +381,9 @@ async def add_model_to_signal_chain(input: AddModelToSignalChainInput) -> str:
         "one or more model ports of the same data direction (data port block with data inports or "
         "data outports, runnable function block, configuration port block). "
         "INPUT: model_name AND port_block_name — if the exact port_block_name is unknown, call "
-        "list_model_port_blocks first to discover the valid identifiers. Model port blocks can be "
+        "list_model_port_blocks first to discover the valid identifiers. If the model is not "
+        "named, find it with list_models + list_model_port_blocks instead of asking the user. "
+        "Model port blocks can be "
         "nested in subsystems; pass a hierarchy path (e.g. 'MyModel/Subsystem/Wavetable') to "
         "address one level exactly. AMBIGUITY: if the tool reports that the name exists at several "
         "hierarchy levels, ask the user which path they mean — never pick one yourself. "
@@ -404,6 +409,9 @@ async def add_model_port_block_to_signal_chain(input: AddModelPortBlockToSignalC
         "[SIGNAL CHAIN — DISCOVERY] DECISION RULE: call this tool whenever a model port block name "
         "is required by another tool (e.g. add_model_port_block_to_signal_chain, "
         "connect_function_block_port_to_model_port) but the exact identifier is unknown or ambiguous. "
+        "OWNER UNKNOWN: if the user did not name the model, call list_models and run this tool for "
+        "each model; use the model whose `port_block_paths` contain the block — do NOT ask the user "
+        "which model contains it. Ask only if several models contain it. "
         "TRIGGER PHRASES: 'list ports of <model>', 'what ports does <model> have', 'show model port "
         "blocks of <model>', or implicitly when the user names a port that may not exist. "
         "WHAT IT RETURNS: all model port blocks (data port blocks, runnable function "
@@ -500,8 +508,10 @@ async def list_model_ports(input: ListModelPortsInput) -> str:
         "INPUT: for each side the model name, the model port block (bare name or hierarchy path) "
         "and the port path inside the block ('Port' or 'Group/.../Port' for ports nested in port "
         "groups). Discover names with list_model_port_blocks and port paths with list_model_ports "
-        "(`leaf_ports[].port_path`). AMBIGUITY: if a block name exists at several hierarchy "
-        "levels, the tool returns AMBIGUOUS_TARGET — ask the user which path they mean. "
+        "(`leaf_ports[].port_path`). If a model name is not given, find it with list_models + "
+        "list_model_port_blocks instead of asking the user. AMBIGUITY: if a block name exists at "
+        "several hierarchy levels, the tool returns AMBIGUOUS_TARGET — ask the user which path "
+        "they mean. "
         "PRECONDITION: both models are added and their model port blocks are visible."
     ),
     annotations={
@@ -554,8 +564,10 @@ async def connect_model_port_to_model_port(input: ConnectModelPortToModelPortInp
         "INPUT: for each side the model name, the model port block (bare name or hierarchy path), "
         "an optional group path inside the block (empty = whole block; a single port is not "
         "allowed), and an optional direction ('inport'/'outport') that is only needed when several "
-        "blocks with the same name exist at the same level. AMBIGUITY: if the tool returns "
-        "AMBIGUOUS_TARGET, ask the user which block is meant — never pick one yourself. "
+        "blocks with the same name exist at the same level. If a model name is not given, find it "
+        "with list_models + list_model_port_blocks instead of asking the user. AMBIGUITY: if the "
+        "tool returns AMBIGUOUS_TARGET, ask the user which block is meant — never pick one "
+        "yourself. "
         "PRECONDITION: both models are added and their model port blocks are visible."
     ),
     annotations={

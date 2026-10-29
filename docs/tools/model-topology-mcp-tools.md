@@ -161,6 +161,10 @@ hierarchy levels (for example `demosmd_io/Wavetable` and
 - `list_model_port_blocks` returns each block's full path in
   `port_block_paths`. Names that occur at several levels are listed under
   `ambiguous_names`, and `port_blocks` uses their full paths as identifiers.
+- When a request names a model port block without its model, the agent calls
+  `list_models` and then `list_model_port_blocks` for each model, and uses the
+  model that contains the block. It asks the user only when several models or
+  hierarchy levels contain the name.
 - Tools that take a model port block name accept a bare name or a hierarchy
   path. The path can be relative to the model (`Subsystem/Wavetable`) or
   prefixed with the model name (`demosmd_io/Wavetable` addresses the
