@@ -390,21 +390,22 @@ def _involves_ports(item: dict, port_names: set[str]) -> bool:
     return port_names <= names
 
 
+def _warning(conflict: dict) -> dict[str, str]:
+    name, context = conflict.get("name", ""), conflict.get("context", "")
+    return {
+        "message": f"{context}: {name}" if context else name,
+        "effect": conflict.get("effect", ""),
+    }
+
+
 def _link_warnings(result: dict) -> list[dict[str, str]]:
     """Conflicts that appeared with the new link, worded as in the Conflicts Viewer."""
     port_names = {result["source"]["port_name"], result["target"]["port_name"]}
-    warnings = []
-    for conflict in result.get("new_conflicts", []):
-        if not _involves_ports(conflict, port_names):
-            continue
-        name, context = conflict.get("name", ""), conflict.get("context", "")
-        warnings.append(
-            {
-                "message": f"{context}: {name}" if context else name,
-                "effect": conflict.get("effect", ""),
-            }
-        )
-    return warnings
+    return [
+        _warning(conflict)
+        for conflict in result.get("new_conflicts", [])
+        if _involves_ports(conflict, port_names)
+    ]
 
 
 def _connect_error_response(result: dict) -> str:
@@ -501,6 +502,182 @@ async def connect_model_port_to_model_port(
         return tool_error_result(exc)
     except Exception as e:
         logger.exception("Error connecting model port to model port")
+        return error_response(str(e), transient=False)
+
+
+def _block_link_warnings(
+    link_port_names: list[set[str]], conflicts: list[dict]
+) -> list[list[dict]]:
+    """Per link, the new conflicts that involve one of its port names.
+
+    The conflict export names ports without their paths, so a conflict whose port name
+    belongs to several new links is attached to each of them and marked as ambiguous.
+    """
+    per_link: list[list[dict]] = [[] for _ in link_port_names]
+    for conflict in conflicts:
+        matches = [
+            index for index, names in enumerate(link_port_names) if _involves_ports(conflict, names)
+        ]
+        for index in matches:
+            warning: dict = _warning(conflict)
+            if len(matches) > 1:
+                warning["ambiguous_attribution"] = True
+            per_link[index].append(warning)
+    return per_link
+
+
+def _group_endpoint_error_response(result: dict) -> str:
+    reason = result.get("reason")
+    side = result.get("endpoint", "")
+    if reason == "ambiguous_same_level_port_blocks":
+        candidates = result.get("candidates", [])
+        return error_response(
+            result["detail"],
+            transient=False,
+            error_code="AMBIGUOUS_TARGET",
+            recovery_hint=(
+                "Several model port blocks share this name at the same hierarchy level, e.g. "
+                "the inport and outport blocks of an FMU."
+            ),
+            next_action=(
+                "Do NOT pick one yourself. Ask the user which block is meant, offering these "
+                f"candidates: {candidates}. Then retry with {side}_port_block_direction set to "
+                "its direction ('inport' or 'outport'), or with a group path that exists only in "
+                "that block."
+            ),
+            candidates=candidates,
+        )
+    if reason == "path_is_model_port":
+        return error_response(
+            result["detail"],
+            transient=False,
+            next_action=(
+                "Pass a model port block or a port group as both sides. To connect two single "
+                "model ports, use `connect_model_port_to_model_port`."
+            ),
+        )
+    if reason == "port_group_not_found":
+        return error_response(
+            result["detail"],
+            transient=False,
+            next_action=(
+                f"Retry with a {side} group path from {result.get('available_group_paths', [])}, "
+                "or leave the group path empty to use the whole model port block."
+            ),
+        )
+    return _port_block_error_response(result)
+
+
+async def connect_model_port_block_to_model_port_block(
+    source_model_name: str,
+    source_port_block_name: str,
+    source_group_path: str,
+    source_direction: Optional[str],
+    target_model_name: str,
+    target_port_block_name: str,
+    target_group_path: str,
+    target_direction: Optional[str],
+) -> str:
+    try:
+        conn = get_connection()
+        for model_name in dict.fromkeys((source_model_name, target_model_name)):
+            await require_model_port_blocks_ready(conn, model_name)
+        result = await dispatch(
+            model_topology_com.connect_model_port_block_to_model_port_block,
+            conn,
+            source_model_name,
+            source_port_block_name,
+            source_group_path,
+            source_direction,
+            target_model_name,
+            target_port_block_name,
+            target_group_path,
+            target_direction,
+        )
+        if result.get("error"):
+            return _group_endpoint_error_response(result)
+
+        links = result["links"]
+        other_links = result.get("other_links", [])
+        warnings_per_link = _block_link_warnings(
+            [{link["port_name"]} for link in links]
+            + [set(link["port_names"]) for link in other_links],
+            result.get("new_conflicts", []),
+        )
+        per_link = warnings_per_link[: len(links)]
+        per_other_link = warnings_per_link[len(links) :]
+        public_links = [
+            {
+                "source_port": link["source_port"],
+                "target_port": link["target_port"],
+                "warnings": warnings,
+            }
+            for link, warnings in zip(links, per_link)
+        ]
+        public_other_links = [
+            {
+                "first_port": link["first_port"],
+                "second_port": link["second_port"],
+                "warnings": warnings,
+            }
+            for link, warnings in zip(other_links, per_other_link)
+        ]
+        warning_count = sum(len(warnings) for warnings in warnings_per_link)
+        between = f"'{result['source']['full_path']}' and '{result['target']['full_path']}'"
+        if not links and not other_links:
+            status = "nothing_connected"
+        elif "conflicts_read_error" in result:
+            status = "unknown"
+        elif warning_count:
+            status = "warning"
+        else:
+            status = "compatible"
+
+        if status == "nothing_connected":
+            message = f"No new links between {between}: no unconnected ports with matching names"
+        else:
+            message = f"Created {len(links)} link(s) between {between}"
+            if other_links:
+                message += f" and {len(other_links)} link(s) outside them"
+            if warning_count:
+                message += f" with {warning_count} warning(s)"
+        payload: dict = {
+            "status": status,
+            "source": result["source"],
+            "target": result["target"],
+            "link_count": len(links),
+            "links": public_links,
+            "unconnected_port_count": len(result["unconnected_ports"]),
+            "unconnected_ports": result["unconnected_ports"],
+            "blocks_added_to_signal_chain": result.get("blocks_added_to_signal_chain", []),
+        }
+        if other_links:
+            payload.update(
+                other_link_count=len(other_links),
+                other_links=public_other_links,
+                other_links_note=(
+                    "ConfigurationDesk also created these links, which do not run between the "
+                    "two requested sides. They exist in the project; report them to the user."
+                ),
+            )
+        if status == "unknown":
+            message += " (conflicts could not be read)"
+            payload.update(
+                note=(
+                    "The links were created, but their conflicts could not be read. "
+                    "Do not repeat the operation; use `check_conflicts` to inspect conflicts."
+                ),
+                conflicts_read_error=result["conflicts_read_error"],
+            )
+        if all(link["connected"] for link in [*links, *other_links]):
+            return success_response(message=message, verified=True, **payload)
+        return unverified_response(
+            message=message + " (issued, but not every link could be confirmed)", **payload
+        )
+    except BridgeError as exc:
+        return tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error connecting model port block to model port block")
         return error_response(str(e), transient=False)
 
 

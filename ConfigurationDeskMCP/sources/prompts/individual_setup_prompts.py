@@ -300,7 +300,7 @@ For an application process pre-configured for ONE behavior model, call
 
 @mcp.prompt(
     name="connect_model_port_blocks",
-    description="Single task: wire bus/I/O function ports to behavior-model port blocks (automatic name matching or a specific pair), or connect two model ports",
+    description="Single task: wire bus/I/O function ports to behavior-model port blocks (automatic name matching or a specific pair), or connect model ports or model port blocks to each other",
 )
 def connect_model_port_blocks(
     model_name: str = "plant_model",
@@ -349,6 +349,17 @@ ports to model ports by name across the project.
    read; do NOT repeat the connection, call `check_conflicts` instead); or
    MAPPING_REFUSED with `configurationdesk_message` (no link was created, the reason is
    not available through the COM API). Do NOT retry a refused pair.
+
+## Step 5 — Connect a whole model port block or port group by matching port names
+1. `connect_model_port_block_to_model_port_block` with, for each side, the model name, the
+   model port block, and optionally a group path inside it (e.g. "StrucPort/SineWaveBus1").
+   ConfigurationDesk pairs the ports by name and maps outports to inports; the order of the
+   two sides does not matter. Pass `*_port_block_direction` ("inport"/"outport") only when the
+   tool reports AMBIGUOUS_TARGET for blocks with the same name at the same level, after asking
+   the user which block is meant.
+2. Report the created `links` with their `warnings`, any `other_links` (links ConfigurationDesk
+   created outside the two sides), and the `unconnected_ports`. Status
+   "nothing_connected" means no unconnected ports with matching names were found.
 
 ## Verify
 Call `check_conflicts` to confirm nothing is left unconnected.

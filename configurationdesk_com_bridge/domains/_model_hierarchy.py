@@ -152,6 +152,38 @@ def find_port(block: Any, port_path: str) -> Any | None:
     return node
 
 
+def find_node(block: Any, path: str) -> Any | None:
+    """Return the node at *path* inside *block*; an empty path returns *block* itself."""
+    node = block
+    normalized = normalize_block_path(path)
+    if not normalized:
+        return block
+    for segment in normalized.split(PATH_SEPARATOR):
+        node = next((child for child in _children(node) if _name(child) == segment), None)
+        if node is None:
+            return None
+    return node
+
+
+def is_model_port(node: Any) -> bool:
+    return _node_kind(node) == _PORT
+
+
+def iter_port_groups(block: Any) -> Iterator[tuple[str, ...]]:
+    """Yield the path inside *block* of every port group, at any depth."""
+
+    def walk(node: Any, prefix: tuple[str, ...]) -> Iterator[tuple[str, ...]]:
+        for child in _children(node):
+            name = _name(child)
+            if name is None or _node_kind(child) == _PORT:
+                continue
+            path = (*prefix, name)
+            yield path
+            yield from walk(child, path)
+
+    yield from walk(block, ())
+
+
 def match_model_port_blocks(
     refs: list[ModelPortBlockRef], model_name: str, spec: str
 ) -> list[ModelPortBlockRef]:

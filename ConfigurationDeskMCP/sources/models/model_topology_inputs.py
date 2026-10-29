@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Pydantic input models for model topology tools."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -139,4 +139,34 @@ class ConnectModelPortToModelPortInput(BaseModel):
     )
     target_port_path: str = Field(
         description="Path of the target port inside its model port block, e.g. 'data1' or 'Group1/Speed'. Use `port_path` from `leaf_ports` of list_model_ports."
+    )
+
+
+PortBlockDirection = Literal["inport", "outport"]
+
+
+class ConnectModelPortBlockToModelPortBlockInput(BaseModel):
+    source_model_name: str = Field(description="Model of the first side, e.g. 'SenderModel'")
+    source_port_block_name: str = Field(
+        description="Model port block of the first side: bare name or hierarchy path, e.g. 'Data Outport'. Use list_model_port_blocks to discover valid names."
+    )
+    source_group_path: str = Field(
+        default="",
+        description="Optional port group inside that block, separated by '/', e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+    )
+    source_port_block_direction: Optional[PortBlockDirection] = Field(
+        default=None,
+        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level (e.g. the inport and outport blocks of an FMU).",
+    )
+    target_model_name: str = Field(description="Model of the second side, e.g. 'ReceiverModel'")
+    target_port_block_name: str = Field(
+        description="Model port block of the second side: bare name or hierarchy path, e.g. 'Data Inport'."
+    )
+    target_group_path: str = Field(
+        default="",
+        description="Optional port group inside that block, e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+    )
+    target_port_block_direction: Optional[PortBlockDirection] = Field(
+        default=None,
+        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level.",
     )

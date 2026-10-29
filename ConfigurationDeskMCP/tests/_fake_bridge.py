@@ -109,6 +109,53 @@ def _connect_model_port_to_model_port(
     }
 
 
+def _connect_model_port_block_to_model_port_block(
+    source_model,
+    source_block,
+    source_group,
+    source_direction,
+    target_model,
+    target_block,
+    target_group,
+    target_direction,
+):
+    """Two name-matched links between 'Bus' groups and one unconnected port per side."""
+
+    def endpoint(model, block, group, direction):
+        full = f"{model}/{block}/{group}" if group else f"{model}/{block}"
+        return {
+            "model_name": model,
+            "port_block_path": f"{model}/{block}",
+            "group_path": group,
+            "direction": direction,
+            "full_path": full,
+        }
+
+    source = endpoint(source_model, source_block, source_group, source_direction or "outport")
+    target = endpoint(target_model, target_block, target_group, target_direction or "inport")
+    links = [
+        {
+            "source_port": f"{source['full_path']}/{name}",
+            "target_port": f"{target['full_path']}/{name}",
+            "port_name": name,
+            "connected": True,
+        }
+        for name in ("Speed", "Gear")
+    ]
+    return {
+        "source": source,
+        "target": target,
+        "links": links,
+        "other_links": [],
+        "unconnected_ports": [
+            {"side": "source", "port": f"{source['full_path']}/Rpm", "already_connected": False},
+            {"side": "target", "port": f"{target['full_path']}/Torque", "already_connected": True},
+        ],
+        "blocks_added_to_signal_chain": [],
+        "new_conflicts": [],
+    }
+
+
 def dispatch_returns() -> dict[str, Any]:
     """Map every COM domain function name → success-shaped return value.
 
@@ -287,14 +334,14 @@ def dispatch_returns() -> dict[str, Any]:
                     {
                         "name": "In1",
                         "port_block_name": "In1",
-                        "port_type": "In",
+                        "port_type": 2,
                         "data_type": "Float64",
                         "data_width": 1,
                     },
                     {
                         "name": "Out1",
                         "port_block_name": "Out1",
-                        "port_type": "Out",
+                        "port_type": 3,
                         "data_type": "Float64",
                         "data_width": 1,
                     },
@@ -307,7 +354,7 @@ def dispatch_returns() -> dict[str, Any]:
                         "port_block_name": "In1",
                         "port_block_path": "demosmd_io/In1",
                         "full_path": "demosmd_io/In1/In1",
-                        "port_type": "In",
+                        "port_type": 2,
                     },
                     {
                         "name": "Speed",
@@ -315,7 +362,7 @@ def dispatch_returns() -> dict[str, Any]:
                         "port_block_name": "Out1",
                         "port_block_path": "demosmd_io/Out1",
                         "full_path": "demosmd_io/Out1/Bus/Speed",
-                        "port_type": "Out",
+                        "port_type": 3,
                     },
                     {
                         "name": "Gear",
@@ -323,12 +370,13 @@ def dispatch_returns() -> dict[str, Any]:
                         "port_block_name": "Out1",
                         "port_block_path": "demosmd_io/Out1",
                         "full_path": "demosmd_io/Out1/Bus/Gear",
-                        "port_type": "Out",
+                        "port_type": 3,
                     },
                 ],
             }
         ),
         "connect_model_port_to_model_port": _connect_model_port_to_model_port,
+        "connect_model_port_block_to_model_port_block": _connect_model_port_block_to_model_port_block,
         "list_application_process_names": ["AppProcess"],
         # ── hardware_com ──────────────────────────────────────────────────
         "add_hardware_platform": {

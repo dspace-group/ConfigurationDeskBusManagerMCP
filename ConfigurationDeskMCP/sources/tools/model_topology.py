@@ -10,6 +10,7 @@ from sources.models.model_topology_inputs import (
     AddModelInput,
     AddModelPortBlockToSignalChainInput,
     AddModelToSignalChainInput,
+    ConnectModelPortBlockToModelPortBlockInput,
     ConnectModelPortToModelPortInput,
     CreateApplicationProcessInput,
     ListModelPortBlocksInput,
@@ -440,7 +441,8 @@ async def list_model_port_blocks(input: ListModelPortBlocksInput) -> str:
         "runnable function port, or configuration port CONTAINED IN a model port block — with its "
         "owning port_block_name, port_block_path (hierarchy path, distinguishes same-named blocks "
         "in different subsystems) and the read-only properties ConfigurationDesk exposes: port_type "
-        "(In/Out), data_type (e.g. Int8), data_width (vector size; 1 = scalar), signal_id, "
+        "(ConfigurationDesk's raw PortType value, e.g. 2 = data inport, 3 = data outport), "
+        "data_type (e.g. Int8), data_width (vector size; 1 = scalar), signal_id, "
         "description, unit, and variable_size. Properties that do not apply to a port type are "
         "omitted. `ports` lists the direct children of each block; `leaf_ports` lists every model "
         "port including ports nested in port groups (structured ports, bus hierarchies of bus "
@@ -518,4 +520,62 @@ async def connect_model_port_to_model_port(input: ConnectModelPortToModelPortInp
         input.target_model_name,
         input.target_port_block_name,
         input.target_port_path,
+    )
+
+
+@mcp.tool(
+    name="connect_model_port_block_to_model_port_block",
+    description=(
+        "[SIGNAL CHAIN — MODEL COMMUNICATION, BY NAME] DECISION RULE: pick this tool when the user "
+        "asks to connect a whole MODEL PORT BLOCK or a PORT GROUP inside one to another model port "
+        "block or port group, e.g. 'connect block A of model M1 to block B of model M2' or 'connect "
+        "bus SineWaveBus1 of A to SineWaveBus1 of B'. For one single port to one single port, use "
+        "connect_model_port_to_model_port. "
+        "WHAT IT DOES: the same as dragging one block's or group's connector square onto another "
+        "in ConfigurationDesk: ConfigurationDesk pairs the ports by name (also in nested port "
+        "groups) and maps outports to inports; the order of the two sides does not matter. Pairs "
+        "are connected regardless of data type or width (mismatches become warnings). Inports that "
+        "already have a source are skipped and keep their link; outports keep their links and can "
+        "get additional ones. Repeating the call creates nothing new. "
+        "RESULT STATES: status='compatible' — links created without conflicts; status='warning' — "
+        "links created, each entry of `links` lists its `warnings` in the wording of the "
+        "ConfigurationDesk Conflicts Viewer (e.g. 'Model port mapping: Mismatching data width'); a "
+        "warning with ambiguous_attribution=true could not be tied to exactly one link because "
+        "the conflict names ports without their paths; status='nothing_connected' — no ports with "
+        "matching names were unconnected, nothing changed; status='unknown' — links created, but "
+        "their conflicts could not be read: do NOT repeat the operation, call check_conflicts. "
+        "`unconnected_ports` lists every port of both sides that got no new link, with "
+        "`already_connected`. If ConfigurationDesk also created links that do not run between the "
+        "two sides, they are listed in `other_links` (`first_port`, `second_port`, `warnings`) and "
+        "count for the status; report them to the user as well. Report warnings to the user "
+        "verbatim. "
+        "SUPPRESSED CONFLICTS: conflicts suppressed in the ConfigurationDesk options (by default "
+        "'Mismatching data type') are not reported, as in the Conflicts Viewer and check_conflicts. "
+        "INPUT: for each side the model name, the model port block (bare name or hierarchy path), "
+        "an optional group path inside the block (empty = whole block; a single port is not "
+        "allowed), and an optional direction ('inport'/'outport') that is only needed when several "
+        "blocks with the same name exist at the same level. AMBIGUITY: if the tool returns "
+        "AMBIGUOUS_TARGET, ask the user which block is meant — never pick one yourself. "
+        "PRECONDITION: both models are added and their model port blocks are visible."
+    ),
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+)
+@with_preconditions("connection", "project", "application", "model")
+async def connect_model_port_block_to_model_port_block(
+    input: ConnectModelPortBlockToModelPortBlockInput,
+) -> str:
+    return await svc.connect_model_port_block_to_model_port_block(
+        input.source_model_name,
+        input.source_port_block_name,
+        input.source_group_path,
+        input.source_port_block_direction,
+        input.target_model_name,
+        input.target_port_block_name,
+        input.target_group_path,
+        input.target_port_block_direction,
     )

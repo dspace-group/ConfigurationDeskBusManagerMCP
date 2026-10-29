@@ -26,6 +26,7 @@ COVERS = (
     "list_model_port_blocks",
     "list_model_ports",
     "connect_model_port_to_model_port",
+    "connect_model_port_block_to_model_port_block",
 )
 
 
@@ -80,7 +81,7 @@ def test_list_model_ports(fake_bridge):
     payload = run_ok(model_svc.list_model_ports("demosmd_io"))
     assert payload["count"] == 2
     assert payload["ports"][0]["port_block_name"] == "In1"
-    assert payload["ports"][0]["port_type"] == "In"
+    assert payload["ports"][0]["port_type"] == 2
 
 
 def test_list_model_ports_scoped_to_one_port_block(fake_bridge):
@@ -854,3 +855,550 @@ def test_list_model_ports_adds_leaf_ports_nested_in_port_groups():
         ("Bus/Inner/Speed", "M1/Out/Bus/Inner/Speed", "M1/Out"),
         ("Bus/Inner/Gear", "M1/Out/Bus/Inner/Gear", "M1/Out"),
     ]
+
+
+# ── Model port block → model port block connections ──────────────────────────────
+
+_INPORT, _OUTPORT = 2, 3
+
+
+class _DirectedPort(_TopologyNode):
+    def __init__(self, name, port_type):
+        super().__init__(name, _PORT_PROPS)
+        for handle in self.Properties._handles:
+            if handle.Name == "PortType":
+                handle.Value = port_type
+        self.port_type = port_type
+        self.ConnectedObjects = []
+
+
+def _leaves(node):
+    if isinstance(node, _DirectedPort):
+        yield node
+        return
+    for child in node:
+        yield from _leaves(child)
+
+
+class _FakeAutoApplication:
+    """Algorithms fake: pairs ports by name like ConnectObjectsAutomatically, exports conflicts."""
+
+    def __init__(self, block_of, width_mismatch=()):
+        self.block_of = block_of
+        self.width_mismatch = set(width_mismatch)
+        self.calls = 0
+        self.links = []
+
+    def ConnectObjectsAutomatically(self, first, second, connection_type):
+        assert connection_type == ""
+        self.calls += 1
+        created = []
+        for a in _leaves(first):
+            for b in _leaves(second):
+                if a.Name != b.Name or a.port_type == b.port_type:
+                    continue
+                inport = a if a.port_type == _INPORT else b
+                if inport.ConnectedObjects:
+                    continue
+                a.ConnectedObjects.append(b)
+                b.ConnectedObjects.append(a)
+                for port in (a, b):
+                    self.block_of[id(port)].IsInApplication = True
+                self.links.append((a, b))
+                created.append(SimpleNamespace(First=a, Second=b))
+        return created
+
+    def ExportConflictsToXML(self, path, infos, group):
+        conflicts = [
+            _xml_item(
+                "Mismatching data width",
+                context="Model port mapping",
+                effect="Warning during build",
+                children=[
+                    _xml_item(
+                        f"Mapping line ({a.Name} - {b.Name})",
+                        children=[_xml_item(p.Name, prop="Data width", value="1") for p in (a, b)],
+                    )
+                ],
+            )
+            for a, b in self.links
+            if a.Name in self.width_mismatch
+        ]
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(f"<Top>{_xml_item('Model', children=conflicts)}</Top>")
+
+
+def _block_fixture(width_mismatch=()):
+    """MO/Data Outport and MI/Data Inport with differently ordered nested groups; FMU/FIR twice."""
+
+    def block(name, children, in_application=False):
+        node = _TopologyNode(name, _BLOCK_PROPS, children)
+        node.IsInApplication = in_application
+        return node
+
+    def group(name, children):
+        return _TopologyNode(name, _GROUP_PROPS, children)
+
+    out = {n: _DirectedPort(n, _OUTPORT) for n in ("Speed", "Rpm", "Gear")}
+    inp = {n: _DirectedPort(n, _INPORT) for n in ("Gear", "Speed", "Torque")}
+    fir_in, fir_out = _DirectedPort("Input", _INPORT), _DirectedPort("Output", _OUTPORT)
+    out_block = block(
+        "Data Outport",
+        [
+            group(
+                "StrucPort",
+                [group("BusA", [out["Speed"], out["Rpm"]]), group("BusB", [out["Gear"]])],
+            )
+        ],
+    )
+    in_block = block(
+        "Data Inport",
+        [
+            group(
+                "StrucPort",
+                [group("BusB", [inp["Gear"]]), group("BusA", [inp["Speed"], inp["Torque"]])],
+            )
+        ],
+        in_application=True,
+    )
+    fir_in_block, fir_out_block = block("FIR", [fir_in]), block("FIR", [fir_out])
+    block_of = {id(p): out_block for p in out.values()}
+    block_of.update({id(p): in_block for p in inp.values()})
+    block_of.update({id(fir_in): fir_in_block, id(fir_out): fir_out_block})
+    app = _FakeAutoApplication(block_of, width_mismatch)
+    mt = _TopologyNode(
+        "mt",
+        [],
+        [
+            _TopologyNode("MO", ["Name", "Source type"], [out_block]),
+            _TopologyNode("MI", ["Name", "Source type"], [in_block]),
+            _TopologyNode("FMU", ["Name", "Source type"], [fir_in_block, fir_out_block]),
+        ],
+    )
+    return (
+        SimpleNamespace(model_topology=mt, algorithms=app),
+        app,
+        SimpleNamespace(out=out, inp=inp),
+    )
+
+
+def _connect_blocks(conn, source, target):
+    """source/target: (model, block, group_path, direction)."""
+    return model_topology_com.connect_model_port_block_to_model_port_block(conn, *source, *target)
+
+
+_MO = ("MO", "Data Outport", "", None)
+_MI = ("MI", "Data Inport", "", None)
+
+
+def test_connect_blocks_pairs_ports_by_name_through_nested_groups():
+    conn, _app, ports = _block_fixture(width_mismatch=("Speed",))
+
+    result = _connect_blocks(conn, _MO, _MI)
+
+    assert [(link["source_port"], link["target_port"]) for link in result["links"]] == [
+        ("MO/Data Outport/StrucPort/BusA/Speed", "MI/Data Inport/StrucPort/BusA/Speed"),
+        ("MO/Data Outport/StrucPort/BusB/Gear", "MI/Data Inport/StrucPort/BusB/Gear"),
+    ]
+    assert all(link["connected"] for link in result["links"])
+    assert result["unconnected_ports"] == [
+        {
+            "side": "source",
+            "port": "MO/Data Outport/StrucPort/BusA/Rpm",
+            "already_connected": False,
+        },
+        {
+            "side": "target",
+            "port": "MI/Data Inport/StrucPort/BusA/Torque",
+            "already_connected": False,
+        },
+    ]
+    assert (result["source"]["direction"], result["target"]["direction"]) == ("outport", "inport")
+    assert result["blocks_added_to_signal_chain"] == ["MO/Data Outport"]
+    [conflict] = result["new_conflicts"]
+    assert conflict["name"] == "Mismatching data width"
+    assert ports.out["Speed"].ConnectedObjects == [ports.inp["Speed"]]
+
+
+def test_connect_blocks_in_reverse_order_reports_ports_per_side():
+    conn, _app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, _MI, _MO)
+
+    assert [(link["source_port"], link["target_port"]) for link in result["links"]] == [
+        ("MI/Data Inport/StrucPort/BusB/Gear", "MO/Data Outport/StrucPort/BusB/Gear"),
+        ("MI/Data Inport/StrucPort/BusA/Speed", "MO/Data Outport/StrucPort/BusA/Speed"),
+    ]
+
+
+def test_connect_blocks_twice_creates_nothing_new():
+    conn, app, _ports = _block_fixture()
+    _connect_blocks(conn, _MO, _MI)
+
+    result = _connect_blocks(conn, _MO, _MI)
+
+    assert result["links"] == []
+    assert app.calls == 2
+    assert len(app.links) == 2
+    assert {(p["port"], p["already_connected"]) for p in result["unconnected_ports"]} >= {
+        ("MO/Data Outport/StrucPort/BusA/Speed", True),
+        ("MI/Data Inport/StrucPort/BusA/Speed", True),
+    }
+
+
+def test_connect_blocks_skips_inport_that_already_has_a_source():
+    conn, _app, ports = _block_fixture()
+    other = _DirectedPort("Elsewhere", _OUTPORT)
+    ports.inp["Speed"].ConnectedObjects.append(other)
+
+    result = _connect_blocks(conn, _MO, _MI)
+
+    assert [link["source_port"] for link in result["links"]] == [
+        "MO/Data Outport/StrucPort/BusB/Gear"
+    ]
+    assert {
+        "side": "target",
+        "port": "MI/Data Inport/StrucPort/BusA/Speed",
+        "already_connected": True,
+    } in result["unconnected_ports"]
+    assert ports.inp["Speed"].ConnectedObjects == [other]
+
+
+def test_connect_port_groups_only_pairs_ports_inside_the_groups():
+    conn, _app, _ports = _block_fixture()
+
+    result = _connect_blocks(
+        conn,
+        ("MO", "Data Outport", "StrucPort/BusA", None),
+        ("MI", "Data Inport", "StrucPort/BusA", None),
+    )
+
+    assert [link["port_name"] for link in result["links"]] == ["Speed"]
+    assert result["source"]["full_path"] == "MO/Data Outport/StrucPort/BusA"
+    assert [p["port"] for p in result["unconnected_ports"]] == [
+        "MO/Data Outport/StrucPort/BusA/Rpm",
+        "MI/Data Inport/StrucPort/BusA/Torque",
+    ]
+
+
+def test_connect_blocks_rejects_a_single_port_as_side():
+    conn, app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, ("MO", "Data Outport", "StrucPort/BusA/Speed", None), _MI)
+
+    assert result["reason"] == "path_is_model_port"
+    assert result["endpoint"] == "source"
+    assert app.calls == 0
+
+
+def test_connect_blocks_reports_unknown_group_path_with_available_groups():
+    conn, app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, _MO, ("MI", "Data Inport", "StrucPort/BusC", None))
+
+    assert result["reason"] == "port_group_not_found"
+    assert result["endpoint"] == "target"
+    assert result["available_group_paths"] == ["StrucPort", "StrucPort/BusB", "StrucPort/BusA"]
+    assert app.calls == 0
+
+
+def test_connect_blocks_requires_direction_for_same_level_duplicates():
+    conn, app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, ("FMU", "FIR", "", None), _MI)
+
+    assert result["reason"] == "ambiguous_same_level_port_blocks"
+    assert result["candidates"] == [
+        {"port_block_path": "FMU/FIR", "direction": "inport"},
+        {"port_block_path": "FMU/FIR", "direction": "outport"},
+    ]
+    assert app.calls == 0
+
+
+def test_connect_blocks_direction_selects_one_of_same_level_duplicates():
+    conn, app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, ("FMU", "FIR", "", "outport"), _MI)
+
+    assert result["source"]["direction"] == "outport"
+    assert [p["port"] for p in result["unconnected_ports"] if p["side"] == "source"] == [
+        "FMU/FIR/Output"
+    ]
+    assert app.calls == 1
+
+
+def test_connect_blocks_rejects_direction_without_matching_block():
+    conn, app, _ports = _block_fixture()
+
+    result = _connect_blocks(conn, ("MO", "Data Outport", "", "inport"), _MI)
+
+    assert result["reason"] == "model_port_block_not_found"
+    assert "no inport block" in result["detail"]
+    assert app.calls == 0
+
+
+def test_connect_blocks_keeps_links_when_second_conflict_export_fails(monkeypatch):
+    conn, app, _ports = _block_fixture()
+    calls = []
+
+    def export_conflicts(_connection):
+        calls.append(True)
+        if len(calls) == 2:
+            raise _ComError("Conflict export failed")
+        return []
+
+    monkeypatch.setattr(model_topology_com, "export_conflict_tree", export_conflicts)
+
+    result = _connect_blocks(conn, _MO, _MI)
+
+    assert len(result["links"]) == 2
+    assert result["conflicts_read_error"] == "Conflict export failed"
+    assert "new_conflicts" not in result
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize(
+    ("port_types", "expected"),
+    [
+        ((2, 2), "inport"),
+        ((3, 3), "outport"),
+        (("2",), "inport"),
+        (("3",), "outport"),
+        ((2, 3), None),
+        (("In",), None),
+    ],
+)
+def test_block_direction_reads_raw_port_type_property(port_types, expected):
+    # The PortType property handle carries ConfigurationDesk's raw value (2 = data inport,
+    # 3 = data outport, observed live); _block_direction reads it via _read_model_port_properties.
+    ports = [_DirectedPort(f"P{index}", value) for index, value in enumerate(port_types)]
+    block = _TopologyNode("Block", _BLOCK_PROPS, [_TopologyNode("Group", _GROUP_PROPS, ports)])
+
+    assert [
+        model_topology_com._read_model_port_properties(port)["port_type"] for port in ports
+    ] == list(port_types)
+    assert model_topology_com._block_direction(block) == expected
+
+
+def test_connect_blocks_reports_links_outside_the_two_sides():
+    conn, app, ports = _block_fixture()
+    outside = _DirectedPort("Rpm", _INPORT)
+    outside_block = _TopologyNode("Data Inport", _BLOCK_PROPS, [outside])
+    outside_model = _TopologyNode("MX", ["Name", "Source type"], [outside_block])
+    outside.Parent, outside_block.Parent = outside_block, outside_model
+    conn.model_topology._children.append(outside_model)
+    connect_by_name = app.ConnectObjectsAutomatically
+
+    def connect(first, second, connection_type):
+        created = connect_by_name(first, second, connection_type)
+        ports.out["Rpm"].ConnectedObjects.append(outside)
+        outside.ConnectedObjects.append(ports.out["Rpm"])
+        return [*created, SimpleNamespace(First=ports.out["Rpm"], Second=outside)]
+
+    app.ConnectObjectsAutomatically = connect
+
+    result = _connect_blocks(conn, _MO, _MI)
+
+    assert len(result["links"]) == 2
+    assert result["other_links"] == [
+        {
+            "first_port": "MO/Data Outport/StrucPort/BusA/Rpm",
+            "second_port": "MX/Data Inport/Rpm",
+            "port_names": ["Rpm"],
+            "connected": True,
+        }
+    ]
+    assert [p["port"] for p in result["unconnected_ports"]] == [
+        "MI/Data Inport/StrucPort/BusA/Torque"
+    ]
+
+
+# ── Model port block → model port block connections (service layer) ────────────
+
+_BLOCK_ARGS = (
+    "demosmd_io",
+    "Out1",
+    "Bus",
+    None,
+    "EngineAndBodyECUs_64-bit",
+    "In1",
+    "Bus",
+    None,
+)
+
+
+def _patch_block_result(monkeypatch, **changes):
+    from tests._fake_bridge import dispatch_returns
+
+    result = dispatch_returns()["connect_model_port_block_to_model_port_block"](*_BLOCK_ARGS)
+    result.update(changes)
+
+    async def dispatch_result(*_args, **_kwargs):
+        return result
+
+    monkeypatch.setattr(model_svc, "dispatch", dispatch_result)
+    return result
+
+
+def _width_conflict(port_name):
+    return {
+        "name": "Mismatching data width",
+        "context": "Model port mapping",
+        "effect": "Warning during build",
+        "children": [
+            {
+                "name": f"Mapping line ({port_name} - {port_name})",
+                "children": [{"name": port_name, "children": []}] * 2,
+            }
+        ],
+    }
+
+
+def test_connect_model_port_block_to_model_port_block(fake_bridge):
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "compatible"
+    assert payload["verified"] is True
+    assert payload["link_count"] == 2
+    assert payload["links"][0] == {
+        "source_port": "demosmd_io/Out1/Bus/Speed",
+        "target_port": "EngineAndBodyECUs_64-bit/In1/Bus/Speed",
+        "warnings": [],
+    }
+    assert payload["unconnected_port_count"] == 2
+
+
+def test_connect_blocks_service_attaches_warnings_per_link(fake_bridge, monkeypatch):
+    _patch_block_result(monkeypatch, new_conflicts=[_width_conflict("Gear")])
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "warning"
+    assert payload["links"][0]["warnings"] == []
+    assert payload["links"][1]["warnings"] == [
+        {"message": "Model port mapping: Mismatching data width", "effect": "Warning during build"}
+    ]
+    assert "with 1 warning(s)" in payload["message"]
+
+
+def test_connect_blocks_service_marks_warning_shared_by_same_named_links(fake_bridge, monkeypatch):
+    result = _patch_block_result(monkeypatch, new_conflicts=[_width_conflict("Speed")])
+    for link in result["links"]:
+        link["port_name"] = "Speed"
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert [link["warnings"][0]["ambiguous_attribution"] for link in payload["links"]] == [
+        True,
+        True,
+    ]
+
+
+def test_connect_blocks_service_reports_nothing_connected(fake_bridge, monkeypatch):
+    _patch_block_result(monkeypatch, links=[])
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "nothing_connected"
+    assert payload["link_count"] == 0
+    assert "No new links" in payload["message"]
+
+
+def test_connect_blocks_service_reports_unknown_when_conflicts_unreadable(fake_bridge, monkeypatch):
+    result = _patch_block_result(monkeypatch, conflicts_read_error="Conflict export failed")
+    del result["new_conflicts"]
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "unknown"
+    assert payload["link_count"] == 2
+    assert "Do not repeat the operation" in payload["note"]
+
+
+def test_connect_blocks_service_reports_nothing_connected_when_conflicts_unreadable(
+    fake_bridge, monkeypatch
+):
+    result = _patch_block_result(monkeypatch, links=[], conflicts_read_error="Export failed")
+    del result["new_conflicts"]
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "nothing_connected"
+    assert "note" not in payload
+    assert "No new links" in payload["message"]
+
+
+def test_connect_blocks_service_reports_links_outside_the_two_sides(fake_bridge, monkeypatch):
+    other_link = {
+        "first_port": "demosmd_io/Out1/Bus/Rpm",
+        "second_port": "OtherModel/In1/Rpm",
+        "port_names": ["Rpm"],
+        "connected": True,
+    }
+    _patch_block_result(
+        monkeypatch, links=[], other_links=[other_link], new_conflicts=[_width_conflict("Rpm")]
+    )
+
+    payload = run_ok(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["status"] == "warning"
+    assert payload["link_count"] == 0
+    assert payload["other_link_count"] == 1
+    assert payload["other_links"] == [
+        {
+            "first_port": "demosmd_io/Out1/Bus/Rpm",
+            "second_port": "OtherModel/In1/Rpm",
+            "warnings": [
+                {
+                    "message": "Model port mapping: Mismatching data width",
+                    "effect": "Warning during build",
+                }
+            ],
+        }
+    ]
+    assert "1 link(s) outside them" in payload["message"]
+    assert payload["verified"] is True
+
+
+def test_connect_blocks_service_asks_for_direction_on_same_level_duplicates(
+    fake_bridge, monkeypatch
+):
+    candidates = [
+        {"port_block_path": "FMU/FIR", "direction": "inport"},
+        {"port_block_path": "FMU/FIR", "direction": "outport"},
+    ]
+
+    async def dispatch_result(*_args, **_kwargs):
+        return {
+            "error": True,
+            "reason": "ambiguous_same_level_port_blocks",
+            "endpoint": "source",
+            "candidates": candidates,
+            "detail": "Model 'FMU' has 2 model port blocks named 'FIR' at 'FMU'.",
+        }
+
+    monkeypatch.setattr(model_svc, "dispatch", dispatch_result)
+
+    payload = run_raw(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["success"] is False
+    assert payload["error_code"] == "AMBIGUOUS_TARGET"
+    assert payload["candidates"] == candidates
+    assert "source_port_block_direction" in payload["next_action"]
+
+
+def test_connect_blocks_service_points_single_ports_to_port_tool(fake_bridge, monkeypatch):
+    async def dispatch_result(*_args, **_kwargs):
+        return {
+            "error": True,
+            "reason": "path_is_model_port",
+            "endpoint": "target",
+            "detail": "'MI/Data Inport/StrucPort/BusA/Speed' is a single model port.",
+        }
+
+    monkeypatch.setattr(model_svc, "dispatch", dispatch_result)
+
+    payload = run_raw(model_svc.connect_model_port_block_to_model_port_block(*_BLOCK_ARGS))
+
+    assert payload["success"] is False
+    assert "connect_model_port_to_model_port" in payload["next_action"]

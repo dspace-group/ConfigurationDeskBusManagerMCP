@@ -21,8 +21,11 @@ from configurationdesk_com_bridge.domains._model_hierarchy import (
     collect_model_port_blocks,
     distinct_parent_paths,
     distinct_paths,
+    find_node,
     find_port,
+    is_model_port,
     iter_leaf_ports,
+    iter_port_groups,
     match_model_port_blocks,
     names_at_multiple_levels,
     normalize_block_path,
@@ -901,6 +904,260 @@ def connect_model_port_to_model_port(
         "source": _public(source),
         "target": _public(target),
         "connected": _is_connected(source["_port"], target["_port"]),
+        "blocks_added_to_signal_chain": list(dict.fromkeys(added)),
+    }
+    try:
+        result["new_conflicts"] = new_conflicts(conflicts_before, export_conflict_tree(connection))
+    except Exception as exc:
+        result["conflicts_read_error"] = _com_error_message(exc)
+    return result
+
+
+# PortType values ConfigurationDesk reports for data ports (observed in 2025-B and 2026-B).
+_PORT_TYPE_DIRECTIONS = {"2": "inport", "3": "outport"}
+
+
+def _block_direction(block: Any) -> Optional[str]:
+    """Return 'inport' or 'outport' when all model ports of *block* share that direction."""
+    directions = {
+        _PORT_TYPE_DIRECTIONS.get(str(_read_model_port_properties(port).get("port_type")))
+        for _, port in iter_leaf_ports(block)
+    }
+    return directions.pop() if len(directions) == 1 else None
+
+
+def _resolve_group_endpoint(
+    connection,
+    model_name: str,
+    port_block_name: str,
+    group_path: str,
+    direction: Optional[str],
+) -> dict[str, Any]:
+    """Resolve ``model / model port block [/ port group path]`` to a block or port group.
+
+    Returns the endpoint, or an ``{"error": True, ...}`` dict. Blocks with the
+    same name at the same hierarchy level are told apart by *direction* or by a
+    *group_path* that exists in only one of them.
+    """
+    refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
+    matches = match_model_port_blocks(refs, model_name, port_block_name)
+    if not matches:
+        return _model_port_block_not_found(model_name, port_block_name, refs)
+    if len(distinct_parent_paths(matches)) > 1:
+        return ambiguous_hierarchy_error(model_name, port_block_name, matches)
+
+    candidates = [(ref, _block_direction(ref.block)) for ref in matches]
+    if direction:
+        candidates = [(ref, d) for ref, d in candidates if d == direction]
+        if not candidates:
+            return {
+                "error": True,
+                "reason": "model_port_block_not_found",
+                "available_port_blocks": distinct_paths(refs),
+                "detail": (
+                    f"Model '{model_name}' has no {direction} block named '{port_block_name}'."
+                ),
+            }
+
+    normalized = normalize_block_path(group_path)
+    found = []
+    for ref, block_direction in candidates:
+        node = find_node(ref.block, normalized)
+        if node is None:
+            continue
+        if node is not ref.block and is_model_port(node):
+            return {
+                "error": True,
+                "reason": "path_is_model_port",
+                "detail": (
+                    f"'{ref.path}/{normalized}' is a single model port, not a model port "
+                    "block or port group."
+                ),
+            }
+        found.append((ref, block_direction, node))
+
+    if not found:
+        return {
+            "error": True,
+            "reason": "port_group_not_found",
+            "available_group_paths": [
+                PATH_SEPARATOR.join(path)
+                for ref, _ in candidates
+                for path in iter_port_groups(ref.block)
+            ],
+            "detail": f"Port group '{normalized}' not found in model port block '{matches[0].path}'.",
+        }
+    if len(found) > 1:
+        return {
+            "error": True,
+            "reason": "ambiguous_same_level_port_blocks",
+            "candidates": [
+                {"port_block_path": ref.path, "direction": block_direction}
+                for ref, block_direction, _ in found
+            ],
+            "detail": (
+                f"Model '{model_name}' has {len(found)} model port blocks named "
+                f"'{port_block_name}' at '{matches[0].parent_path}'."
+            ),
+        }
+
+    ref, block_direction, node = found[0]
+    full_path = f"{ref.path}{PATH_SEPARATOR}{normalized}" if normalized else ref.path
+    return {
+        "model_name": model_name,
+        "port_block_path": ref.path,
+        "group_path": normalized,
+        "direction": block_direction,
+        "full_path": full_path,
+        "_block": ref.block,
+        "_node": node,
+    }
+
+
+def _has_links(port: Any) -> bool:
+    try:
+        return len(list(port.ConnectedObjects)) > 0
+    except Exception:
+        return False
+
+
+def _object_path(connection, obj: Any) -> str:
+    """Best-effort hierarchy path of a model topology object, walking Parent up to its model."""
+    try:
+        models = list(connection.model_topology)
+    except Exception:
+        models = []
+    parts: list[str] = []
+    node = obj
+    for _ in range(64):
+        name = _element_name(node)
+        if not name:
+            break
+        parts.append(name)
+        if any(_same_object(node, model) for model in models):
+            break
+        try:
+            node = node.Parent
+        except Exception:
+            break
+        if node is None:
+            break
+    return PATH_SEPARATOR.join(reversed(parts))
+
+
+def connect_model_port_block_to_model_port_block(
+    connection,
+    source_model_name: str,
+    source_port_block_name: str,
+    source_group_path: str,
+    source_direction: Optional[str],
+    target_model_name: str,
+    target_port_block_name: str,
+    target_group_path: str,
+    target_direction: Optional[str],
+) -> dict[str, Any]:
+    """Map all name-matching ports of two model port blocks or port groups.
+
+    Mirrors dragging one parent port onto another in the signal chain:
+    ``Algorithms.ConnectObjectsAutomatically`` pairs ports by name (also in
+    nested port groups), maps outports to inports, skips inports that already
+    have a source, keeps existing links, and returns only the new links. The
+    conflicts are read once before and once after the operation.
+
+    Domain ref: ConfigurationDesk Automating Tool Handling,
+    ICaAlgorithms.ConnectObjectsAutomatically and ExportConflictsToXML;
+    ConfigurationDesk Real-Time Implementation Guide, "Mapping Algorithm for
+    Model Port Blocks With Structured Data Ports".
+    """
+    source = _resolve_group_endpoint(
+        connection, source_model_name, source_port_block_name, source_group_path, source_direction
+    )
+    if source.get("error"):
+        return {**source, "endpoint": "source"}
+    target = _resolve_group_endpoint(
+        connection, target_model_name, target_port_block_name, target_group_path, target_direction
+    )
+    if target.get("error"):
+        return {**target, "endpoint": "target"}
+
+    endpoints = (source, target)
+    side_ports = [
+        [
+            (f"{endpoint['full_path']}{PATH_SEPARATOR}{PATH_SEPARATOR.join(path)}", port)
+            for path, port in iter_leaf_ports(endpoint["_node"])
+        ]
+        for endpoint in endpoints
+    ]
+    already_connected = [[_has_links(port) for _, port in ports] for ports in side_ports]
+    in_application_before = [_is_in_application(e["_block"]) for e in endpoints]
+    conflicts_before = export_conflict_tree(connection)
+
+    created = connection.algorithms.ConnectObjectsAutomatically(
+        source["_node"], target["_node"], ""
+    )
+
+    def locate(port: Any) -> tuple[int, int]:
+        for side, ports in enumerate(side_ports):
+            for index, (_, candidate) in enumerate(ports):
+                if _same_object(candidate, port):
+                    return side, index
+        return -1, -1
+
+    def path_of(port: Any, end: tuple[int, int]) -> str:
+        side, index = end
+        return side_ports[side][index][0] if side >= 0 else _object_path(connection, port)
+
+    links = []
+    other_links = []
+    linked: set[tuple[int, int]] = set()
+    for link in list(created or []):
+        first, second = link.First, link.Second
+        first_end, second_end = locate(first), locate(second)
+        ends = sorted((first_end, second_end))
+        linked.update(end for end in ends if end[0] >= 0)
+        if [side for side, _ in ends] != [0, 1]:
+            other_links.append(
+                {
+                    "first_port": path_of(first, first_end),
+                    "second_port": path_of(second, second_end),
+                    "port_names": sorted({_element_name(first), _element_name(second)} - {""}),
+                    "connected": _is_connected(first, second),
+                }
+            )
+            continue
+        (_, source_index), (_, target_index) = ends
+        source_path, source_port = side_ports[0][source_index]
+        target_path, target_port = side_ports[1][target_index]
+        links.append(
+            {
+                "source_port": source_path,
+                "target_port": target_path,
+                "port_name": source_path.rsplit(PATH_SEPARATOR, 1)[-1],
+                "connected": _is_connected(source_port, target_port),
+            }
+        )
+
+    unconnected = [
+        {
+            "side": ("source", "target")[side],
+            "port": path,
+            "already_connected": already_connected[side][index],
+        }
+        for side, ports in enumerate(side_ports)
+        for index, (path, _) in enumerate(ports)
+        if (side, index) not in linked
+    ]
+    added = [
+        endpoint["port_block_path"]
+        for endpoint, was_in_application in zip(endpoints, in_application_before)
+        if not was_in_application and _is_in_application(endpoint["_block"])
+    ]
+    result: dict[str, Any] = {
+        "source": _public(source),
+        "target": _public(target),
+        "links": links,
+        "other_links": other_links,
+        "unconnected_ports": unconnected,
         "blocks_added_to_signal_chain": list(dict.fromkeys(added)),
     }
     try:

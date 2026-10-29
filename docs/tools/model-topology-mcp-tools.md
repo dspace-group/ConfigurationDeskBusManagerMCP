@@ -20,6 +20,7 @@ ports available for connection, and create application processes.
 | `list_model_port_blocks` | List available model port blocks, including blocks in subsystems, with their hierarchy paths. | Read-only. |
 | `list_model_ports` | List the model ports inside the model port blocks, with their read-only properties. | Read-only; pass `port_block_name` (name or hierarchy path) to scope to matching blocks. `leaf_ports` (paginated with `offset`/`limit`) also lists ports nested in port groups. |
 | `connect_model_port_to_model_port` | Map one model port to another model port (model communication), like drawing the mapping line manually. | ConfigurationDesk applies its mapping rules; refused mappings create no link. Not idempotent: a second identical call is refused. |
+| `connect_model_port_block_to_model_port_block` | Map all name-matching ports of two model port blocks or port groups, like dragging one connector square onto another. | ConfigurationDesk pairs the ports by name; existing links stay. Idempotent: a repeated call creates nothing. |
 
 ## Typical Workflow
 
@@ -40,6 +41,7 @@ ports available for connection, and create application processes.
 | Discover exact model port block names | `list_model_port_blocks` |
 | Inspect port direction, data type, or width | `list_model_ports` |
 | Connect one model port to another model port | `connect_model_port_to_model_port` |
+| Connect whole model port blocks or port groups by port name | `connect_model_port_block_to_model_port_block` |
 
 ## Model Port Blocks and Model Ports
 
@@ -105,6 +107,50 @@ type" during dragging. To have the conflict reported, clear
 Conflict settings**. The conflict then appears in the Conflicts Viewer, in
 `check_conflicts`, and as a warning of this tool.
 
+## Connecting Model Port Blocks and Port Groups
+
+`connect_model_port_block_to_model_port_block` does what dragging one block's or
+port group's connector square (parent port) onto another does in the
+ConfigurationDesk UI. Each side is a model port block, given as model name and
+block name or hierarchy path, optionally narrowed to a port group inside it with
+`group_path` (for example `StrucPort/SineWaveBus1`). A single port is not a valid
+side; use `connect_model_port_to_model_port` for that.
+
+The tool calls ConfigurationDesk's `ConnectObjectsAutomatically`. ConfigurationDesk
+pairs the ports, the server does not:
+
+- Ports are paired by name, also in nested port groups, not by position. Outports
+  are mapped to inports; the order of the two sides does not matter.
+- Every name-matching pair is connected regardless of data type or width;
+  mismatches appear as warnings on the created links.
+- Inports that already have a source are skipped and keep their link. Outports
+  keep their links and can get additional ones.
+- A repeated call creates nothing new. If no names match, nothing is connected.
+
+| Result | Meaning |
+|---|---|
+| `status: "compatible"` | Links were created and no conflict appeared with them. |
+| `status: "warning"` | Links were created; each entry of `links` lists its `warnings` in the wording of the Conflicts Viewer (e.g. `Model port mapping: Mismatching data width`). |
+| `status: "nothing_connected"` | No unconnected ports with matching names were found; nothing changed. |
+| `status: "unknown"` | Links were created, but their conflicts could not be read (`conflicts_read_error`, `note`). Do not repeat the operation; call `check_conflicts`. |
+
+The result lists every created link (`source_port`, `target_port`, `warnings`),
+every port of both sides that got no new link (`unconnected_ports`, with
+`already_connected` for ports that had a link before), and the blocks
+ConfigurationDesk added to the signal chain. `source_port` and `target_port`
+refer to the two sides of the call, not to the data direction.
+
+If ConfigurationDesk creates links that do not run between the two sides, the
+result lists them in `other_links` (`first_port`, `second_port`, `warnings`,
+with `other_link_count` and `other_links_note`) instead of hiding them; they
+exist in the project and count for `status`.
+
+The conflict export names ports without their paths. If a conflict's port name
+belongs to several new links (the same port name in different port groups), the
+warning is attached to each of them with `ambiguous_attribution: true`. Conflicts
+suppressed in the ConfigurationDesk options are not reported (see
+[Suppressed conflicts](#suppressed-conflicts)).
+
 ## Hierarchy and Ambiguous Names
 
 The model topology is hierarchical: model port blocks can sit at the model's
@@ -121,13 +167,18 @@ hierarchy levels (for example `demosmd_io/Wavetable` and
   root-level block).
 - If a bare name matches blocks at several hierarchy levels,
   `add_model_port_block_to_signal_chain`,
-  `connect_function_block_port_to_model_port`, and
-  `connect_model_port_to_model_port` change nothing and return
+  `connect_function_block_port_to_model_port`,
+  `connect_model_port_to_model_port`, and
+  `connect_model_port_block_to_model_port_block` change nothing and return
   `AMBIGUOUS_TARGET`. The agent must ask the user which path is meant and must
   not pick one itself.
 - Blocks with the same name at the same hierarchy level (for example the inport
   and outport blocks of an FMU) are told apart by the `port_path` passed to
-  `connect_model_port_to_model_port`.
+  `connect_model_port_to_model_port`. For
+  `connect_model_port_block_to_model_port_block`, pass
+  `source_port_block_direction` / `target_port_block_direction` (`inport` or
+  `outport`); without it the tool returns `AMBIGUOUS_TARGET` with the candidates
+  and their directions.
 
 ## Related Guides
 
