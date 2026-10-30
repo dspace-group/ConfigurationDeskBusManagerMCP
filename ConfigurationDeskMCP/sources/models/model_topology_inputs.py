@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """Pydantic input models for model topology tools."""
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
+
+from sources.services._pagination import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
 
 
 class AddModelInput(BaseModel):
@@ -105,4 +107,66 @@ class ListModelPortsInput(BaseModel):
     port_block_name: Optional[str] = Field(
         default=None,
         description="Optional model port block to restrict the listing to (e.g. 'Sine_t' or the hierarchy path 'SineWaves/Subsystem/Sine_t'). A bare name lists the matching blocks at every hierarchy level. Omit to list the model ports of every model port block. Use list_model_port_blocks to discover valid names.",
+    )
+    offset: int = Field(
+        default=0,
+        ge=0,
+        description="Zero-based offset into `leaf_ports`, e.g. 0. Use `leaf_ports_page.next_offset` from the previous response.",
+    )
+    limit: int = Field(
+        default=DEFAULT_PAGE_LIMIT,
+        ge=1,
+        le=MAX_PAGE_LIMIT,
+        description="Maximum `leaf_ports` entries per page, e.g. 100. Defaults to 100; maximum 1000. `ports` is not paginated.",
+    )
+
+
+class ConnectModelPortToModelPortInput(BaseModel):
+    source_model_name: str = Field(
+        description="Model that contains the source model port, e.g. 'masterAppl'"
+    )
+    source_port_block_name: str = Field(
+        description="Model port block of the source port: bare name or hierarchy path, e.g. 'Data Outport1' or 'masterAppl/Subsystem/Data Outport1'. Use list_model_port_blocks to discover valid names."
+    )
+    source_port_path: str = Field(
+        description="Path of the source port inside its model port block; separate nested port groups with '/', e.g. 'data1' or 'Group1/Group2/Speed'. Use `port_path` from `leaf_ports` of list_model_ports."
+    )
+    target_model_name: str = Field(
+        description="Model that contains the target model port, e.g. 'slaveAppl'"
+    )
+    target_port_block_name: str = Field(
+        description="Model port block of the target port: bare name or hierarchy path, e.g. 'Data Inport1'. Use list_model_port_blocks to discover valid names."
+    )
+    target_port_path: str = Field(
+        description="Path of the target port inside its model port block, e.g. 'data1' or 'Group1/Speed'. Use `port_path` from `leaf_ports` of list_model_ports."
+    )
+
+
+PortBlockDirection = Literal["inport", "outport"]
+
+
+class ConnectModelPortBlockToModelPortBlockInput(BaseModel):
+    source_model_name: str = Field(description="Model of the first side, e.g. 'SenderModel'")
+    source_port_block_name: str = Field(
+        description="Model port block of the first side: bare name or hierarchy path, e.g. 'Data Outport'. Use list_model_port_blocks to discover valid names."
+    )
+    source_group_path: str = Field(
+        default="",
+        description="Optional port group inside that block, separated by '/', e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+    )
+    source_port_block_direction: Optional[PortBlockDirection] = Field(
+        default=None,
+        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level (e.g. the inport and outport blocks of an FMU).",
+    )
+    target_model_name: str = Field(description="Model of the second side, e.g. 'ReceiverModel'")
+    target_port_block_name: str = Field(
+        description="Model port block of the second side: bare name or hierarchy path, e.g. 'Data Inport'."
+    )
+    target_group_path: str = Field(
+        default="",
+        description="Optional port group inside that block, e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+    )
+    target_port_block_direction: Optional[PortBlockDirection] = Field(
+        default=None,
+        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level.",
     )

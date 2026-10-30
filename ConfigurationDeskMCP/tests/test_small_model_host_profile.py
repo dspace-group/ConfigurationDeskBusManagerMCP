@@ -46,6 +46,7 @@ _ROUTING_RULES = (
     "`assign_channel_set`",
     "`auto_assign_channel_set`",
     "`assign_hardware_automatically`",
+    "`list_models`",
     "`list_model_port_blocks`",
     "`list_model_ports`",
     "`auto_connect_function_blocks_to_model_port_blocks`",
