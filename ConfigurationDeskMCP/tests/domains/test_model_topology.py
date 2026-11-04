@@ -155,7 +155,7 @@ def test_connect_model_port_to_model_port_returns_refusal_unchanged(fake_bridge)
     assert payload["configurationdesk_message"] == (
         "ConnectObjects\r\nConnectObjects: Cannot connect \r\n; HResult; "
     )
-    assert "does not report the specific reason" in payload["error"]
+    assert payload["error"] == "ConfigurationDesk refused to connect."
 
 
 def test_link_warnings_ignore_new_conflicts_of_other_elements():
@@ -1169,8 +1169,8 @@ def test_connect_blocks_keeps_links_when_second_conflict_export_fails(monkeypatc
     ],
 )
 def test_block_direction_reads_raw_port_type_property(port_types, expected):
-    # The PortType property handle carries ConfigurationDesk's raw value (2 = data inport,
-    # 3 = data outport, observed live); _block_direction reads it via _read_model_port_properties.
+    # PortType values: 2 = data inport, 3 = data outport; _block_direction reads them via
+    # _read_model_port_properties.
     ports = [_DirectedPort(f"P{index}", value) for index, value in enumerate(port_types)]
     block = _TopologyNode("Block", _BLOCK_PROPS, [_TopologyNode("Group", _GROUP_PROPS, ports)])
 

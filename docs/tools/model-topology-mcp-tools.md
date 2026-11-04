@@ -85,7 +85,7 @@ in the UI:
 | `status: "compatible"` | The link was created and no conflict appeared with it. |
 | `status: "warning"` | The link was created. `warnings` lists every conflict that appeared with it, with `message` in the wording of the Conflicts Viewer (e.g. `Model port mapping: Invalid connection between data port blocks of same model`) and the `effect` ConfigurationDesk reports (e.g. `Generate no code`). |
 | `status: "unknown"` | The link was created, but the conflict export after connecting failed, so its conflicts could not be read. `success` is `true`; `verified` reports as usual whether the link was confirmed. `conflicts_read_error` holds the error and `note` says so. Do not repeat the connection; call `check_conflicts` to inspect the conflicts. |
-| `success: false`, `status: "error"`, `error_code: "MAPPING_REFUSED"` | ConfigurationDesk refused the mapping (e.g. inport to inport, a duplicate mapping line, or a second source on a connected inport). No link was created. `configurationdesk_message` holds ConfigurationDesk's message unchanged. The ConfigurationDesk COM API does not report the specific reason; the UI shows it only while the mapping line is dragged. |
+| `success: false`, `status: "error"`, `error_code: "MAPPING_REFUSED"` | ConfigurationDesk refused the mapping (e.g. inport to inport, a duplicate mapping line, or a second source on a connected inport). No link was created. `configurationdesk_message` holds ConfigurationDesk's message unchanged. For the mapping rules, see *Methods for Model Port Mapping* in the ConfigurationDesk Real-Time Implementation Guide. |
 
 ConfigurationDesk adds model port blocks that are not yet in the signal chain
 when it connects their ports; the tool lists them in
@@ -96,16 +96,14 @@ when it connects their ports; the tool lists them in
 
 Like the Conflicts Viewer and `check_conflicts`, the tool reports only the
 conflicts that ConfigurationDesk generates. Conflicts suppressed in the
-ConfigurationDesk options are not generated and therefore not reported, even
-though the UI shows a warning for them while a mapping line is dragged.
+ConfigurationDesk options are not generated and therefore not reported.
 
 By default, ConfigurationDesk suppresses the "Mismatching data type" conflict.
-A mapping such as UInt32 → Int32 therefore returns `status: "compatible"`,
-while the UI shows the yellow warning "Model port mapping: Mismatching data
-type" during dragging. To have the conflict reported, clear
-**Suppress the 'Mismatching data type' conflict** in **Options → Configuration →
-Conflict settings**. The conflict then appears in the Conflicts Viewer, in
-`check_conflicts`, and as a warning of this tool.
+A mapping such as UInt32 → Int32 therefore returns `status: "compatible"`.
+To have the conflict reported, clear **Suppress the 'Mismatching data type'
+conflict** in **Options → Configuration → Conflict settings**. The conflict then
+appears in the Conflicts Viewer, in `check_conflicts`, and as a warning of this
+tool.
 
 ## Connecting Model Port Blocks and Port Groups
 
@@ -145,7 +143,7 @@ result lists them in `other_links` (`first_port`, `second_port`, `warnings`,
 with `other_link_count` and `other_links_note`) instead of hiding them; they
 exist in the project and count for `status`.
 
-The conflict export names ports without their paths. If a conflict's port name
+Conflicts are matched to the new links by port name. If a conflict's port name
 belongs to several new links (the same port name in different port groups), the
 warning is attached to each of them with `ambiguous_attribution: true`. Conflicts
 suppressed in the ConfigurationDesk options are not reported (see

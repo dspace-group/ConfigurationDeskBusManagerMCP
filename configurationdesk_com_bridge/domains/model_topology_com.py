@@ -852,11 +852,10 @@ def connect_model_port_to_model_port(
     """Map one model port to another model port, as a manual mapping line does.
 
     ``ActiveApplication.ConnectObjects`` applies ConfigurationDesk's mapping
-    rules itself: mappings the UI marks red are refused with an exception that
-    does not name the violated rule. For a created link, the conflicts that
-    appeared with it are read from the conflict export, which carries the
-    Conflicts Viewer texts. ConnectObjects also adds blocks that are not yet in
-    the signal chain.
+    rules itself and raises an exception for mappings it refuses. For a created
+    link, the conflicts that appeared with it are read from the conflict export,
+    which carries the Conflicts Viewer texts. ConnectObjects also adds blocks
+    that are not yet in the signal chain.
 
     Domain ref: ConfigurationDesk Automating Tool Handling,
     ICaActiveApplication.ConnectObjects and ICaAlgorithms.ExportConflictsToXML;
@@ -913,7 +912,7 @@ def connect_model_port_to_model_port(
     return result
 
 
-# PortType values ConfigurationDesk reports for data ports (observed in 2025-B and 2026-B).
+# PortType values of data ports: 2 = inport, 3 = outport.
 _PORT_TYPE_DIRECTIONS = {"2": "inport", "3": "outport"}
 
 

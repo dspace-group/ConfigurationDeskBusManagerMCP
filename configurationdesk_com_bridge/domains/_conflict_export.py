@@ -2,9 +2,8 @@
 
 Uses ``ICaAlgorithms.ExportConflictsToXML`` (ConfigurationDesk Automating Tool
 Handling, ICaAlgorithms). The export keeps the Conflicts Viewer hierarchy
-(context set > conflict > involved elements) and its display texts, which the
-``ICaConflictManager`` API of ConfigurationDesk 2026-B does not provide
-reliably. Must be called on the STA thread.
+(context set > conflict > involved elements) and its display texts. Must be
+called on the STA thread.
 """
 
 from __future__ import annotations

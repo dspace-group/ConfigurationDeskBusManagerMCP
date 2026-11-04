@@ -375,11 +375,6 @@ async def list_model_ports(
         return error_response(str(e), transient=False)
 
 
-_REFUSAL_NOTE = (
-    "The ConfigurationDesk COM API does not report the specific reason why a mapping is refused."
-)
-
-
 def _involves_ports(item: dict, port_names: set[str]) -> bool:
     names: set[str] = set()
     pending = [item]
@@ -412,7 +407,7 @@ def _connect_error_response(result: dict) -> str:
     reason = result.get("reason")
     if reason == "connect_refused":
         return error_response(
-            f"{result['detail']} {_REFUSAL_NOTE}",
+            result["detail"],
             transient=False,
             error_code="MAPPING_REFUSED",
             recovery_hint=(
@@ -510,8 +505,8 @@ def _block_link_warnings(
 ) -> list[list[dict]]:
     """Per link, the new conflicts that involve one of its port names.
 
-    The conflict export names ports without their paths, so a conflict whose port name
-    belongs to several new links is attached to each of them and marked as ambiguous.
+    Conflicts are matched to links by port name; a conflict whose port name belongs to
+    several new links is attached to each of them and marked as ambiguous.
     """
     per_link: list[list[dict]] = [[] for _ in link_port_names]
     for conflict in conflicts:

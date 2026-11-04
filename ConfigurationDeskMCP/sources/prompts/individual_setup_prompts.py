@@ -350,8 +350,8 @@ ports to model ports by name across the project.
 3. Report the result exactly as returned: status "compatible"; status "warning" with the
    `warnings` messages; status "unknown" (link created, but its conflicts could not be
    read; do NOT repeat the connection, call `check_conflicts` instead); or
-   MAPPING_REFUSED with `configurationdesk_message` (no link was created, the reason is
-   not available through the COM API). Do NOT retry a refused pair.
+   MAPPING_REFUSED with `configurationdesk_message` (no link was created; report the
+   message unchanged). Do NOT retry a refused pair.
 
 ## Step 5 — Connect a whole model port block or port group by matching port names
 1. `connect_model_port_block_to_model_port_block` with, for each side, the model name, the
