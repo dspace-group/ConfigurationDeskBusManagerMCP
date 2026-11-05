@@ -43,6 +43,9 @@ authoritative.
   an `.htfx` file.
 - Use `add_model_to_signal_chain` for every model port block of one model and
   `add_model_port_block_to_signal_chain` only for a named block. Use
+  `add_model` with `application_process_mode` to assign newly added models: one
+  application process per model, none, an existing application process, or one
+  new shared application process. Use
   `create_preconfigured_application_process` only when one specific model is
   named; otherwise use `create_application_process`.
 - Use `create_io_function_block` for CAN, LIN, or Ethernet hardware channels.

@@ -9,7 +9,7 @@ ports available for connection, and create application processes.
 
 | Tool | Purpose | Safety notes |
 |---|---|---|
-| `add_model` | Add a supported model file to the active application. | Use the runtime schema for supported file types and options. |
+| `add_model` | Add one or more supported model files to the active application and assign them to application processes. | `application_process_mode`: `per_model` (default) creates one preconfigured application process per model; `none` creates none; `existing` adds the models to an existing application process (asks when several exist) and by default runs Optimize Configuration on it, which regroups its tasks; `new_shared` creates one optimized application process for all models. Simulink models are analyzed automatically. With several processing unit applications, pass `processing_unit_application` or answer the prompt. |
 | `replace_model` | Replace an existing model with another file. | Destructive because it changes the active model topology. |
 | `remove_model` | Remove a model from the project. | Destructive; related connections can be removed. |
 | `analyze_models` | Analyze loaded models and prepare their public interfaces. | May take time for large models. |
@@ -22,8 +22,9 @@ ports available for connection, and create application processes.
 
 ## Typical Workflow
 
-1. Call `add_model` with a supported model file path.
-2. Call `analyze_models` when the model type requires analysis.
+1. Call `add_model` with one or more supported model file paths and the
+   application process mode the request asks for.
+2. Call `analyze_models` only when a Simulink model changed after it was added.
 3. Call `list_models` and `list_model_port_blocks` to discover available names.
 4. Use `add_model_to_signal_chain` for all model port blocks or
    `add_model_port_block_to_signal_chain` for a selected one.

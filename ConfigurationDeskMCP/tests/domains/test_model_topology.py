@@ -28,9 +28,286 @@ COVERS = (
 )
 
 
-def test_add_model(fake_bridge):
-    payload = run_ok(model_svc.add_model("CentralGatewayECU_64-bit.sic", analyze=False))
+def _model_files(tmp_path, *names):
+    paths = []
+    for name in names:
+        path = tmp_path / name
+        path.write_bytes(b"")
+        paths.append(str(path))
+    return paths
+
+
+def _record_dispatch(monkeypatch, *, pua_names=("PUA_1",), process_names=("AppProcess",)):
+    """Route dispatch through the fake bridge and record ``(name, args)`` of every call."""
+    from tests import _fake_bridge
+
+    returns = _fake_bridge.dispatch_returns()
+    returns["list_processing_unit_application_names"] = list(pua_names)
+    returns["list_application_process_names"] = list(process_names)
+    calls = []
+
+    async def fake_dispatch(fn, *args, **kwargs):
+        calls.append((fn.__name__, args[1:]))
+        handler = returns[fn.__name__]
+        return handler(*args[1:]) if callable(handler) else handler
+
+    monkeypatch.setattr(model_svc, "dispatch", fake_dispatch)
+    monkeypatch.setattr(model_svc, "get_connection", lambda: SimpleNamespace())
+    return calls
+
+
+def _call(calls, name):
+    return [args for called, args in calls if called == name]
+
+
+def test_add_model(fake_bridge, tmp_path):
+    paths = _model_files(tmp_path, "CentralGatewayECU_64-bit.sic")
+    payload = run_ok(model_svc.add_models(paths))
     assert "CentralGatewayECU_64-bit" in payload["added"]
+
+
+def test_add_models_per_model_decides_analysis_by_file_type(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch)
+    paths = _model_files(tmp_path, "Plant.slx", "Legacy.MDL", "Restbus.sic", "Bus.bsc", "Ecu.fmu")
+
+    payload = run_ok(model_svc.add_models(paths, "per_model"))
+
+    (args,) = _call(calls, "add_models")
+    models, mode, shared_name = args
+    assert [analyze for _, analyze in models] == [True, True, False, False, False]
+    assert mode == model_topology_com.AP_ONE_FOR_EACH
+    assert shared_name is None
+    assert payload["verified"] is True
+    assert payload["assignments"]["Plant"] == ["Plant"]
+    assert payload["processing_unit_application"] == "PUA_1"
+
+
+def test_add_models_none_creates_no_application_process(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, pua_names=["PUA_1", "PUA_2"])
+    paths = _model_files(tmp_path, "A.fmu", "B.fmu")
+
+    payload = run_ok(model_svc.add_models(paths, "none"))
+
+    (args,) = _call(calls, "add_models")
+    assert args[1] == model_topology_com.AP_NONE
+    assert not _call(calls, "list_processing_unit_application_names")
+    assert payload["created_processes"] == []
+    assert payload["added"] == ["A", "B"]
+
+
+def test_add_models_new_shared_names_the_application_process(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch)
+    paths = _model_files(tmp_path, "A.fmu", "B.slx")
+
+    payload = run_ok(model_svc.add_models(paths, "new_shared", application_process="Shared_AP"))
+
+    (args,) = _call(calls, "add_models")
+    assert args[1:] == (model_topology_com.AP_ONE_FOR_ALL, "Shared_AP")
+    assert payload["created_processes"] == ["Shared_AP"]
+    assert payload["assignments"] == {"A": ["Shared_AP"], "B": ["Shared_AP"]}
+
+
+def test_add_models_per_model_with_several_processing_unit_applications(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, pua_names=["PUA_1", "PUA_2"])
+    paths = _model_files(tmp_path, "A.fmu", "B.fmu")
+    offered = []
+
+    async def choose(names):
+        offered.extend(names)
+        return "pua_2"
+
+    payload = run_ok(
+        model_svc.add_models(paths, "per_model", choose_processing_unit_application=choose)
+    )
+
+    assert offered == ["PUA_1", "PUA_2"]
+    assert _call(calls, "add_models")[0][1] == model_topology_com.AP_NONE
+    assert _call(calls, "create_preconfigured_application_processes") == [(["A", "B"], "PUA_2")]
+    assert payload["multiple_processing_unit_applications_workaround"] is True
+    assert payload["created_processes"] == ["A", "B"]
+    assert payload["processing_unit_application"] == "PUA_2"
+
+
+def test_add_models_new_shared_with_several_processing_unit_applications(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, pua_names=["PUA_1", "PUA_2"])
+    paths = _model_files(tmp_path, "A.fmu", "B.fmu")
+
+    payload = run_ok(
+        model_svc.add_models(
+            paths,
+            "new_shared",
+            application_process="Shared_AP",
+            processing_unit_application="PUA_1",
+        )
+    )
+
+    assert _call(calls, "create_application_process") == [("Shared_AP", [], False, "PUA_1")]
+    (args,) = _call(calls, "add_models_to_application_process")
+    assert args[1:] == ("Shared_AP", True)
+    assert not _call(calls, "add_models")
+    assert payload["optimized"] is True
+    assert payload["created_processes"] == ["Shared_AP"]
+
+
+def test_add_models_without_processing_unit_application_choice_adds_nothing(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, pua_names=["PUA_1", "PUA_2"])
+    paths = _model_files(tmp_path, "A.fmu")
+
+    async def choose(_names):
+        return None
+
+    payload = json.loads(
+        asyncio.run(
+            model_svc.add_models(paths, "new_shared", choose_processing_unit_application=choose)
+        )
+    )
+
+    assert payload["success"] is False
+    assert "processing_unit_application" in payload["next_action"]
+    assert not _call(calls, "add_models")
+    assert not _call(calls, "create_application_process")
+
+
+def test_add_models_existing_uses_only_application_process(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, process_names=["Only_AP"])
+    paths = _model_files(tmp_path, "A.fmu", "B.slx")
+
+    async def choose(_names):
+        raise AssertionError("user must not be asked")
+
+    payload = run_ok(
+        model_svc.add_models(
+            paths, "existing", optimize_configuration=False, choose_application_process=choose
+        )
+    )
+
+    (args,) = _call(calls, "add_models_to_application_process")
+    models, target, optimize = args
+    assert [analyze for _, analyze in models] == [False, True]
+    assert (target, optimize) == ("Only_AP", False)
+    assert payload["assignments"] == {"A": ["Only_AP"], "B": ["Only_AP"]}
+
+
+def test_add_models_existing_asks_user_when_several(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, process_names=["AP_1", "AP_2"])
+    paths = _model_files(tmp_path, "A.fmu")
+    offered = []
+
+    async def choose(names):
+        offered.extend(names)
+        return "AP_2"
+
+    run_ok(model_svc.add_models(paths, "existing", choose_application_process=choose))
+
+    assert offered == ["AP_1", "AP_2"]
+    assert _call(calls, "add_models_to_application_process")[0][1:] == ("AP_2", True)
+
+
+def test_add_models_existing_matches_given_name_case_insensitively(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, process_names=["AP_1", "AP_2"])
+    paths = _model_files(tmp_path, "A.fmu")
+
+    run_ok(model_svc.add_models(paths, "existing", application_process="ap_1"))
+
+    assert _call(calls, "add_models_to_application_process")[0][1] == "AP_1"
+
+
+@pytest.mark.parametrize(
+    ("process_names", "requested", "expected"),
+    [
+        ([], None, "no application process"),
+        (["AP_1", "AP_2"], None, "not selected"),
+        (["AP_1"], "Missing_AP", "not found"),
+    ],
+)
+def test_add_models_existing_errors(monkeypatch, tmp_path, process_names, requested, expected):
+    calls = _record_dispatch(monkeypatch, process_names=process_names)
+    paths = _model_files(tmp_path, "A.fmu")
+
+    payload = json.loads(
+        asyncio.run(model_svc.add_models(paths, "existing", application_process=requested))
+    )
+
+    assert payload["success"] is False
+    assert expected in payload["error"]
+    assert not _call(calls, "add_models_to_application_process")
+
+
+def test_add_models_rejects_missing_and_unsupported_files(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch)
+    existing = _model_files(tmp_path, "A.fmu", "notes.txt")
+
+    missing = json.loads(
+        asyncio.run(model_svc.add_models([existing[0], str(tmp_path / "Missing.slx")]))
+    )
+    unsupported = json.loads(asyncio.run(model_svc.add_models(existing)))
+
+    assert missing["success"] is False and "Missing.slx" in missing["error"]
+    assert unsupported["success"] is False and "notes.txt" in unsupported["error"]
+    assert calls == []
+
+
+def test_add_models_reports_partial_result_as_unverified(monkeypatch, tmp_path):
+    calls = _record_dispatch(monkeypatch, process_names=["AP_1"])
+    paths = _model_files(tmp_path, "A.fmu", "B.fmu")
+
+    async def partial(fn, *args, **kwargs):
+        calls.append((fn.__name__, args[1:]))
+        if fn.__name__ == "list_application_process_names":
+            return ["AP_1"]
+        return {
+            "application_process": "AP_1",
+            "added": ["A"],
+            "failed": [{"path": paths[1], "detail": "Model already present."}],
+            "verified": False,
+            "all_models": ["A"],
+            "assignments": {"A": ["AP_1"]},
+            "optimized": True,
+            "optimize_detail": "",
+        }
+
+    monkeypatch.setattr(model_svc, "dispatch", partial)
+
+    payload = json.loads(asyncio.run(model_svc.add_models(paths, "existing")))
+
+    assert payload["success"] is True
+    assert payload["verified"] is False
+    assert "only 1 of 2" in payload["message"]
+    assert payload["failed"][0]["detail"] == "Model already present."
+
+
+def test_add_model_input_validation():
+    from pydantic import ValidationError
+
+    from sources.models.model_topology_inputs import AddModelInput
+
+    assert AddModelInput(paths="C:/m.fmu").paths == ["C:/m.fmu"]
+    assert AddModelInput(paths=["C:/m.fmu"]).application_process_mode == "per_model"
+    with pytest.raises(ValidationError):
+        AddModelInput(paths=[])
+    with pytest.raises(ValidationError):
+        AddModelInput(paths=["C:/m.fmu"], application_process="AP_1")
+    with pytest.raises(ValidationError):
+        AddModelInput(
+            paths=["C:/m.fmu"], application_process_mode="existing", processing_unit_application="P"
+        )
+    with pytest.raises(ValidationError):
+        AddModelInput(paths=["C:/m.fmu"], application_process_mode="shared")
+
+
+def test_application_process_elicitation_offers_existing_names():
+    from sources.tools.model_topology import _choose_application_process
+
+    class _Ctx:
+        async def elicit(self, message, schema):
+            assert schema.model_json_schema()["properties"]["application_process"]["enum"] == [
+                "AP_1",
+                "AP_2",
+            ]
+            return SimpleNamespace(action="accept", data=schema(application_process="AP_2"))
+
+    assert asyncio.run(_choose_application_process(_Ctx(), ["AP_1", "AP_2"])) == "AP_2"
+    assert asyncio.run(_choose_application_process(None, ["AP_1", "AP_2"])) is None
 
 
 def test_replace_model(fake_bridge):

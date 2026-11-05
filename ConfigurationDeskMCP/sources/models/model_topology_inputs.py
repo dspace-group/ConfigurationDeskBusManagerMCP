@@ -1,27 +1,87 @@
 # -*- coding: utf-8 -*-
 """Pydantic input models for model topology tools."""
 
-from typing import Optional
+from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+ApplicationProcessMode = Literal["per_model", "none", "existing", "new_shared"]
 
 
 class AddModelInput(BaseModel):
-    path: str = Field(
-        description="Path to the model file (.slx, .mdl, .sic, .bsc, or .fmu), e.g. 'C:/Models/Restbus_Model_64-bit.sic'"
-    )
-    analyze: bool = Field(
-        default=True,
-        description="Analyze model after adding. Set false for .sic/.bsc/.fmu files, e.g. true",
-    )
-    create_preconfigured: bool = Field(
-        default=True,
+    paths: list[str] = Field(
+        min_length=1,
         description=(
-            "Whether to create a pre-configured application process. "
-            "If true, a new application process with the same name as the model file (without extension) is created."
-            "Set to false to only add the model to the model topology and to assingn the model to an existing application process manually."
+            "Model files to add (.slx, .mdl, .sic, .bsc, or .fmu), e.g. "
+            "['C:/Models/Restbus_Model_64-bit.sic', 'C:/Models/Plant.slx']. A single path string "
+            "is also accepted. Simulink models (.slx/.mdl) are analyzed automatically; "
+            ".sic/.bsc/.fmu files are not, because their interfaces are already defined."
         ),
     )
+    application_process_mode: ApplicationProcessMode = Field(
+        default="per_model",
+        description=(
+            "How the added models are assigned to application processes: "
+            "'per_model' (default) = create one preconfigured application process per model, "
+            "named after the model; "
+            "'none' = only add the models, create no application process; "
+            "'existing' = add all models to an existing application process "
+            "(`application_process`); "
+            "'new_shared' = create one new application process for all models and optimize its "
+            "configuration (`application_process` optionally names it)."
+        ),
+    )
+    application_process: Optional[str] = Field(
+        default=None,
+        description=(
+            "Mode 'existing': name of the existing application process that receives the models. "
+            "Omit to use the only one, or to ask the user when several exist. "
+            "Mode 'new_shared': optional name of the new application process (default "
+            "'ApplicationProcess_<n>'). Not allowed with the other modes."
+        ),
+    )
+    processing_unit_application: Optional[str] = Field(
+        default=None,
+        description=(
+            "Modes 'per_model' and 'new_shared': processing unit application that hosts the new "
+            "application process(es). Omit to create one if none exists, use the only one, or ask "
+            "the user when several exist. Not allowed with the other modes."
+        ),
+    )
+    optimize_configuration: bool = Field(
+        default=True,
+        description=(
+            "Mode 'existing' only: run Optimize Configuration on the target application process "
+            "after adding the models, so their runnable functions are assigned to tasks. This "
+            "regroups and reprioritizes all tasks of that application process. Set false to keep "
+            "its current task configuration."
+        ),
+    )
+
+    @field_validator("paths", mode="before")
+    @classmethod
+    def _single_path_to_list(cls, value):
+        return [value] if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def _check_mode_specific_fields(self):
+        if self.application_process is not None and self.application_process_mode not in (
+            "existing",
+            "new_shared",
+        ):
+            raise ValueError(
+                "application_process is only used with application_process_mode "
+                "'existing' or 'new_shared'."
+            )
+        if self.processing_unit_application is not None and self.application_process_mode not in (
+            "per_model",
+            "new_shared",
+        ):
+            raise ValueError(
+                "processing_unit_application is only used with application_process_mode "
+                "'per_model' or 'new_shared'."
+            )
+        return self
 
 
 class ReplaceModelInput(BaseModel):
