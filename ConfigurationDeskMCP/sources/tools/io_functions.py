@@ -82,7 +82,9 @@ async def list_io_function_block_types(input: ListIoFunctionBlockTypesInput) -> 
         "`add_io_function_block`) and the model must already be added "
         "(see `add_model`); use `list_model_port_blocks` to discover valid "
         "model port block names and `list_model_ports` for model port names "
-        "and directions. "
+        "and directions. If the model is not named, call `list_models` and "
+        "`list_model_port_blocks` for each model to find it instead of asking "
+        "the user. "
         "For bulk auto-matching of all bus-configuration function ports to "
         "model port blocks, use `auto_connect_function_blocks_to_model_port_blocks` instead."
     ),

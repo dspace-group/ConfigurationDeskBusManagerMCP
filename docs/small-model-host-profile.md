@@ -13,7 +13,11 @@ authoritative.
    assembling an ad hoc tool sequence.
 3. Do not invent project names, application names, model port blocks, matrix paths,
    XPath expressions, hardware addresses, or channel indexes. Use a list or
-   find tool when an identifier is unknown.
+   find tool when an identifier is unknown; do not ask the user for an
+   identifier that a tool can return. When a model port block is named without
+   its model, call `list_models`, then `list_model_port_blocks` for each model,
+   and use the model that contains it. Ask the user only when the lookup leaves
+   several candidates.
 4. Stop when a tool returns `success=false`. Treat `verified=false` as
    unconfirmed. Do not retry when `retryable=false`; follow `next_action` and
    `recovery_hint`.

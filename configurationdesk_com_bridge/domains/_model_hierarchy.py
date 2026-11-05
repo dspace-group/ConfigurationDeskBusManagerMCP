@@ -14,7 +14,7 @@ All functions that touch COM objects must be called on the STA thread.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Iterator
 
 from configurationdesk_com_bridge.domains._property_helpers import (
     iter_properties,
@@ -116,6 +116,72 @@ def collect_model_port_blocks(model: Any, model_name: str) -> list[ModelPortBloc
 
 def normalize_block_path(value: str) -> str:
     return value.replace("\\", PATH_SEPARATOR).strip(PATH_SEPARATOR)
+
+
+def iter_leaf_ports(block: Any) -> Iterator[tuple[tuple[str, ...], Any]]:
+    """Yield ``(path inside the block, model port)`` for every model port of *block*.
+
+    Model ports can be nested in port groups (e.g. structured data ports or
+    the bus hierarchy of a bus simulation container), so the walk descends
+    into every child that is not itself a model port.
+    """
+
+    def walk(node: Any, prefix: tuple[str, ...]) -> Iterator[tuple[tuple[str, ...], Any]]:
+        for child in _children(node):
+            name = _name(child)
+            if name is None:
+                continue
+            path = (*prefix, name)
+            if _node_kind(child) == _PORT:
+                yield path, child
+            else:
+                yield from walk(child, path)
+
+    yield from walk(block, ())
+
+
+def find_port(block: Any, port_path: str) -> Any | None:
+    """Return the model port at *port_path* (``Group/.../Port``) inside *block*, if any."""
+    node = block
+    for segment in normalize_block_path(port_path).split(PATH_SEPARATOR):
+        node = next((child for child in _children(node) if _name(child) == segment), None)
+        if node is None:
+            return None
+    if node is block or _node_kind(node) != _PORT:
+        return None
+    return node
+
+
+def find_node(block: Any, path: str) -> Any | None:
+    """Return the node at *path* inside *block*; an empty path returns *block* itself."""
+    node = block
+    normalized = normalize_block_path(path)
+    if not normalized:
+        return block
+    for segment in normalized.split(PATH_SEPARATOR):
+        node = next((child for child in _children(node) if _name(child) == segment), None)
+        if node is None:
+            return None
+    return node
+
+
+def is_model_port(node: Any) -> bool:
+    return _node_kind(node) == _PORT
+
+
+def iter_port_groups(block: Any) -> Iterator[tuple[str, ...]]:
+    """Yield the path inside *block* of every port group, at any depth."""
+
+    def walk(node: Any, prefix: tuple[str, ...]) -> Iterator[tuple[str, ...]]:
+        for child in _children(node):
+            name = _name(child)
+            if name is None or _node_kind(child) == _PORT:
+                continue
+            path = (*prefix, name)
+            yield path
+            yield from walk(child, path)
+
+    yield from walk(block, ())
 
 
 def match_model_port_blocks(

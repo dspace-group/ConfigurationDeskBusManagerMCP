@@ -78,6 +78,7 @@ Automates dSPACE ConfigurationDesk and BusManager via COM.
 4. All tools return JSON with `success` field. Check it EVERY time. On failure, read `error_code`, `recovery_hint`, and `next_action` fields for what to do next.
 5. If any tool returns `"retryable": false`, do NOT retry it. Follow the `recovery_hint` instead.
 6. In a multi-step workflow, if any step returns `success=false` or a required verification fails, STOP. Explain the failure to the user and ask whether to continue with later steps. Do NOT skip ahead, reinterpret the step, or choose an alternate path without explicit user approval.
+7. Look up missing identifiers yourself before asking the user. If a request names a model port block or model port but not its model, call `list_models`, then `list_model_port_blocks` for each model, and use the model that contains the block. Do NOT ask the user which model contains a block, and do NOT ask them to confirm a name that a tool result already showed. Ask only when the lookup leaves several candidates (the name exists in several models or is listed under `ambiguous_names`).
 
 ## WORKFLOW POLICY 
 Honor the user's requested operation. Do not require unrelated workflow steps.
@@ -136,8 +137,11 @@ prerequisites.
 - "Assign exact PDU(s)" or "assign exact signal(s)" to a bus config → `assign_matrix_to_bus_config` with a precise `matrix_xpath` (NOT `assign_ecu_to_bus_config`)
 - If the user or use case names exact PDUs or signals, keep that scope literal. Do NOT widen to whole-ECU assignment unless explicitly requested.
 - Ask the user only when the named PDU/signal scope is materially ambiguous across multiple ECUs/clusters or the instructions conflict.
+- Model port block named without its model (e.g. "connect port X of block A to port Y of block B") → find each model with `list_models` + `list_model_port_blocks` (rule 7). Do NOT ask the user which model contains the block.
 - Model port blocks can be nested in subsystems, so one name (e.g. `Wavetable`) can exist at several hierarchy levels. If a tool returns `AMBIGUOUS_TARGET` or `list_model_port_blocks` shows the name under `ambiguous_names`, ask the user which hierarchy path they mean — never pick one yourself — then retry with that full path.
 - "Set baud rate" → `set_io_function_block_property` (this is a hardware I/O setting, not bus config)
+- "Connect model port X to model port Y" (model communication, model port block → model port block) → `connect_model_port_to_model_port` (NOT `connect_function_block_port_to_model_port`). Report its warnings and refusals verbatim; do NOT retry a pair ConfigurationDesk refused.
+- "Connect block A to block B" or "connect bus/port group X to Y" by matching port names (model port block or port group → model port block or port group) → `connect_model_port_block_to_model_port_block` (NOT `connect_model_port_to_model_port`).
 - "Set function port property" or "set IsMappable / InitialValue on a port" → `set_function_port_property`
 - Do NOT call `generate_bus_containers` just to inspect, list, or set function port properties. Function ports are exposed by assigned bus features; use `find_bus_config_elements` and `set_function_port_property` first.
 - If `set_function_port_property` fails because ports or property nodes are missing, call `find_bus_config_elements` and verify the assigned bus features / exact port XPath. Do NOT use `generate_bus_containers` as recovery for that failure.
