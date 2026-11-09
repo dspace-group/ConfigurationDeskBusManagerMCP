@@ -74,6 +74,37 @@ def dispatch_returns() -> dict[str, Any]:
         assigned = [element_name] if element_name else ["CanBodyCluster"]
         return {"verified": True, "assigned": assigned, "parts": [part] if part else []}
 
+    def _replace_matrix_assignment(
+        bus_config_name,
+        new_matrix_name,
+        assigned_matrix_name=None,
+        use_additional_replacing_conditions=None,
+    ):
+        assert isinstance(bus_config_name, str) and bus_config_name
+        assert isinstance(new_matrix_name, str) and new_matrix_name
+        node = assigned_matrix_name or "BusManagerComMatrix"
+        source = {
+            "File name": f"{new_matrix_name}.arxml",
+            "File path": "mock-matrices",
+            "Content hash": f"hash-{new_matrix_name}",
+        }
+        return {
+            "bus_config_name": bus_config_name,
+            "replaced_matrix_node": node,
+            "new_matrix": new_matrix_name,
+            "assigned_matrices_before": [node],
+            "assigned_matrices_after": [node],
+            "expected_source": source,
+            "assigned_sources_before": [{"File name": f"{node}.arxml"}],
+            "assigned_sources_after": [source],
+            "deprecated_nodes": [],
+            "additional_replacing_conditions": {
+                "requested": use_additional_replacing_conditions,
+                "previous": None if use_additional_replacing_conditions is None else False,
+                "restored": None if use_additional_replacing_conditions is None else True,
+            },
+        }
+
     def _create_preconfigured_application_process(model_name, *args):
         assert isinstance(model_name, str) and model_name, (
             "create_preconfigured_application_process expects a non-empty model name"
@@ -182,6 +213,7 @@ def dispatch_returns() -> dict[str, Any]:
             "new_ecus": ["CentralGatewayEcu"],
         },
         "remove_communication_matrix": {"verified": True, "removed": ["CanBodyCluster"]},
+        "_execute_matrix_replacement": _replace_matrix_assignment,
         "list_matrices": {
             "matrices": {
                 "clusters": [

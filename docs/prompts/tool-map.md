@@ -43,6 +43,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | --- | --- | --- | --- |
 | `add_communication_matrix` | Communication matrix | Prompt: `load_communication_matrix` | Load `D:/Databases/vehicle_can.arxml`, then list its clusters and ECUs before assigning matrix elements. |
 | `remove_communication_matrix` | Communication matrix | [Communication Matrix](../tools/communication-matrix-mcp-tools.md) | Check assignments, then remove only matrix `vehicle_can`; do not force removal unless dependent assignments are intentionally removed. |
+| `replace_communication_matrix_assignment` | Communication matrix | Prompt: `load_communication_matrix` | Load `D:/Databases/vehicle_can_v2.arxml`, replace matrix `vehicle_can` assigned to `CAN_Restbus` with `vehicle_can_v2`, then report deprecated nodes and check conflicts. |
 | `list_matrices` | Communication matrix | Prompt: `load_communication_matrix` | List loaded matrices by clusters and ECUs; continue with the returned offset if more results are available. |
 | `find_matrix_elements` | Communication matrix | Prompt: `load_communication_matrix` | In the ECU hierarchy, find TX PDUs for `ECU_A`; use a precise XPath when repeated names make the scope ambiguous. |
 | `set_matrix_element_property` | Communication matrix | [Property Setting Boundary](README.md#property-setting-boundary) | In the loaded matrix, set initial value `0` on the exact signal `EngineSpeed`; do not change a bus-configuration feature or function port. |

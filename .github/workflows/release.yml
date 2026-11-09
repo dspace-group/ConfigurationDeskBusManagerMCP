@@ -105,7 +105,7 @@ jobs:
 
           ### What is included
 
-          The server exposes 78 tools across 12 domains, together with 11
+          The server exposes 79 tools across 12 domains, together with 11
           resources and 15 workflow prompts. It supports:
 
           - ConfigurationDesk startup, diagnostics, lifecycle, save, undo, and redo

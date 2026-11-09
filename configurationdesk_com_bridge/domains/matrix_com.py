@@ -92,6 +92,58 @@ def remove_communication_matrix(
     return {"removed": removed_names, "still_present": still_present, "verified": not still_present}
 
 
+def _matrix_source(node) -> dict[str, Optional[str]]:
+    source: dict[str, Optional[str]] = {}
+    for name in ("File name", "File path", "Content hash"):
+        try:
+            handle, _ = resolve_named_property_handle(node, name)
+            value = handle.Value
+            source[name] = value if isinstance(value, str) and value.strip() else None
+        except Exception:
+            source[name] = None
+    return source
+
+
+def read_matrix_replacement_state(connection, assigned_xpath: str) -> dict[str, Any]:
+    """Read matrix names and source properties without returning COM handles."""
+    bus_rel = connection.relations.Item("BusConfigurations")
+    matrices_rel = connection.relations.Item("CommunicationMatricesByClusters")
+    return {
+        "bus_configurations": [node.Name for node in bus_rel.GetTopNodes()],
+        "assigned": [
+            {"name": node.Name, "source": _matrix_source(node)}
+            for node in bus_rel.FindByXPath(assigned_xpath, None)
+        ],
+        "loaded": [
+            {"name": node.Name, "source": _matrix_source(node)}
+            for node in matrices_rel.GetTopNodes()
+        ],
+    }
+
+
+def get_additional_replacing_conditions(connection) -> Any:
+    """Read the raw application-wide additional replacing conditions setting."""
+    return connection.busmanager.Configure("GetOrSetAdditionalReplacingConditions", [])
+
+
+def set_additional_replacing_conditions(connection, value: bool) -> None:
+    """Write the application-wide additional replacing conditions setting."""
+    connection.busmanager.Configure("GetOrSetAdditionalReplacingConditions", [value])
+
+
+def replace_communication_matrix_assignment(
+    connection, assigned_xpath: str, assigned_index: int, loaded_index: int
+) -> None:
+    """Configure replacement using indexes resolved by a caller on the same STA task."""
+    assigned = list(
+        connection.relations.Item("BusConfigurations").FindByXPath(assigned_xpath, None)
+    )
+    loaded = list(connection.relations.Item("CommunicationMatricesByClusters").GetTopNodes())
+    connection.busmanager.Configure(
+        "ReplaceCommunicationMatrixAssignment", [assigned[assigned_index], loaded[loaded_index]]
+    )
+
+
 def list_matrices(connection) -> dict[str, Any]:
     """List all communication matrices by clusters and ECUs views."""
     matrices: dict[str, list[str]] = {"clusters": [], "ecus": []}

@@ -89,6 +89,15 @@ Multiple matrices can be loaded.
 - `find_matrix_elements` with xpath='//BusEcu[@Name="{ecu_name}"]//BusISignalIPdu' — one ECU's PDUs.
 
 See the `configurationdesk://reference/xpath` resource for ready-made patterns.
+
+## Updating a matrix that is already assigned
+If a bus configuration already uses an older version of this matrix, load the
+new file with `add_communication_matrix`, then call
+`replace_communication_matrix_assignment` with the bus configuration name and
+the new matrix name from `list_matrices` (add `assigned_matrix_name` when several
+matrices are assigned). Review `deprecated_nodes` and run `check_conflicts`.
+Do NOT remove and re-assign the matrix — that discards the bus configuration
+structure.
 """
 
 
