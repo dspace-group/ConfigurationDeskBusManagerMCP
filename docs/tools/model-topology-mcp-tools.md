@@ -41,7 +41,7 @@ ports available for connection, and create application processes.
 | Discover exact model port block names | `list_model_port_blocks` |
 | Inspect port direction, data type, or width | `list_model_ports` |
 | Connect one model port to another model port | `connect_model_port_to_model_port` |
-| Connect whole model port blocks or port groups by port name | `connect_model_port_block_to_model_port_block` |
+| Connect one model port block or port group to another model port block or port group | `connect_model_port_block_to_model_port_block` |
 
 ## Model Port Blocks and Model Ports
 
@@ -56,15 +56,16 @@ block properties are read-only in ConfigurationDesk; except for the names of
 unresolved blocks created via function blocks, they can only be changed in the
 behavior model.
 
-Model ports can be nested in port groups inside a block, for example the bus
-hierarchy of a bus simulation container
+Model ports can be nested in port groups inside a model port block, for example
+the bus hierarchy of a bus simulation container
 (`Restbus_BusConfiguration_Out/In/Simulated ECUs/.../CanBodyCommController Enable`).
 `list_model_ports` returns two lists:
 
-- `ports` and `count`: the direct children of each block (unchanged behavior; a
-  port group appears as one entry without port properties).
+- `ports` and `count`: the direct children of each model port block (unchanged
+  behavior; a port group appears as one entry without port properties).
 - `leaf_ports`: every model port at any depth, with `port_path` (the path inside
-  its block, e.g. `Group1/Group2/Speed`), `port_block_path`, and `full_path`.
+  its model port block, e.g. `Group1/Group2/Speed`), `port_block_path`, and
+  `full_path`.
   `leaf_ports` is paginated; `leaf_ports_page` holds `total_count`,
   `returned_count`, `offset`, `limit`, and `next_offset`.
 
@@ -85,7 +86,7 @@ in the UI:
 | `status: "compatible"` | The link was created and no conflict appeared with it. |
 | `status: "warning"` | The link was created. `warnings` lists every conflict that appeared with it, with `message` in the wording of the Conflicts Viewer (e.g. `Model port mapping: Invalid connection between data port blocks of same model`) and the `effect` ConfigurationDesk reports (e.g. `Generate no code`). |
 | `status: "unknown"` | The link was created, but the conflict export after connecting failed, so its conflicts could not be read. `success` is `true`; `verified` reports as usual whether the link was confirmed. `conflicts_read_error` holds the error and `note` says so. Do not repeat the connection; call `check_conflicts` to inspect the conflicts. |
-| `success: false`, `status: "error"`, `error_code: "MAPPING_REFUSED"` | ConfigurationDesk refused the mapping (e.g. inport to inport, a duplicate mapping line, or a second source on a connected inport). No link was created. `configurationdesk_message` holds ConfigurationDesk's message unchanged. For the mapping rules, see *Methods for Model Port Mapping* in the ConfigurationDesk Real-Time Implementation Guide. |
+| `success: false`, `status: "error"`, `error_code: "MAPPING_REFUSED"` | ConfigurationDesk refused the mapping (e.g. inport to inport, a duplicate mapping line, or a second source on a connected inport). No link was created. `configurationdesk_message` holds ConfigurationDesk's message unchanged. |
 
 ConfigurationDesk adds model port blocks that are not yet in the signal chain
 when it connects their ports; the tool lists them in
@@ -107,12 +108,12 @@ tool.
 
 ## Connecting Model Port Blocks and Port Groups
 
-`connect_model_port_block_to_model_port_block` does what dragging one block's or
-port group's connector square (parent port) onto another does in the
+`connect_model_port_block_to_model_port_block` does what dragging one model port
+block's or port group's connector square (parent port) onto another does in the
 ConfigurationDesk UI. Each side is a model port block, given as model name and
-block name or hierarchy path, optionally narrowed to a port group inside it with
-`group_path` (for example `StrucPort/SineWaveBus1`). A single port is not a valid
-side; use `connect_model_port_to_model_port` for that.
+model port block name or hierarchy path, optionally narrowed to a port group
+inside it with `group_path` (for example `StrucPort/SineWaveBus1`). A single
+port is not a valid side; use `connect_model_port_to_model_port` for that.
 
 The tool calls ConfigurationDesk's `ConnectObjectsAutomatically`. ConfigurationDesk
 pairs the ports, the server does not:
@@ -134,7 +135,7 @@ pairs the ports, the server does not:
 
 The result lists every created link (`source_port`, `target_port`, `warnings`),
 every port of both sides that got no new link (`unconnected_ports`, with
-`already_connected` for ports that had a link before), and the blocks
+`already_connected` for ports that had a link before), and the model port blocks
 ConfigurationDesk added to the signal chain. `source_port` and `target_port`
 refer to the two sides of the call, not to the data direction.
 
@@ -161,8 +162,8 @@ hierarchy levels (for example `demosmd_io/Wavetable` and
   `ambiguous_names`, and `port_blocks` uses their full paths as identifiers.
 - When a request names a model port block without its model, the agent calls
   `list_models` and then `list_model_port_blocks` for each model, and uses the
-  model that contains the block. It asks the user only when several models or
-  hierarchy levels contain the name.
+  model that contains the model port block. It asks the user only when several
+  models or hierarchy levels contain the name.
 - Tools that take a model port block name accept a bare name or a hierarchy
   path. The path can be relative to the model (`Subsystem/Wavetable`) or
   prefixed with the model name (`demosmd_io/Wavetable` addresses the
@@ -174,9 +175,9 @@ hierarchy levels (for example `demosmd_io/Wavetable` and
   `connect_model_port_block_to_model_port_block` change nothing and return
   `AMBIGUOUS_TARGET`. The agent must ask the user which path is meant and must
   not pick one itself.
-- Blocks with the same name at the same hierarchy level (for example the inport
-  and outport blocks of an FMU) are told apart by the `port_path` passed to
-  `connect_model_port_to_model_port`. For
+- Model port blocks with the same name at the same hierarchy level (for example
+  the inport and outport model port blocks of an FMU) are told apart by the
+  `port_path` passed to `connect_model_port_to_model_port`. For
   `connect_model_port_block_to_model_port_block`, pass
   `source_port_block_direction` / `target_port_block_direction` (`inport` or
   `outport`); without it the tool returns `AMBIGUOUS_TARGET` with the candidates

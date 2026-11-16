@@ -626,7 +626,7 @@ class _FakeConnectApplication:
 
 
 def _connect_fixture(refuse=False):
-    """M1: nested port groups and two same-level 'FIR' blocks; M2: 'In' at two levels."""
+    """M1: nested port groups and two same-level 'FIR' model port blocks; M2: 'In' at two levels."""
     speed, gear = _Port("Speed"), _Port("Gear")
     fir_in, fir_out = _Port("Input"), _Port("Output")
     m2_root_in, m2_sub_in = _Port("data1"), _Port("data1")
@@ -983,7 +983,7 @@ def _block_fixture(width_mismatch=()):
 
 
 def _connect_blocks(conn, source, target):
-    """source/target: (model, block, group_path, direction)."""
+    """source/target: (model, model port block, group_path, direction)."""
     return model_topology_com.connect_model_port_block_to_model_port_block(conn, *source, *target)
 
 
@@ -1133,7 +1133,7 @@ def test_connect_blocks_rejects_direction_without_matching_block():
     result = _connect_blocks(conn, ("MO", "Data Outport", "", "inport"), _MI)
 
     assert result["reason"] == "model_port_block_not_found"
-    assert "no inport block" in result["detail"]
+    assert "no inport model port block" in result["detail"]
     assert app.calls == 0
 
 

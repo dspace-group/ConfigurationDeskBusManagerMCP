@@ -152,11 +152,11 @@ class ConnectModelPortBlockToModelPortBlockInput(BaseModel):
     )
     source_group_path: str = Field(
         default="",
-        description="Optional port group inside that block, separated by '/', e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+        description="Optional port group inside that model port block, separated by '/', e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
     )
     source_port_block_direction: Optional[PortBlockDirection] = Field(
         default=None,
-        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level (e.g. the inport and outport blocks of an FMU).",
+        description="Optional: 'inport' or 'outport'. Only needed when several model port blocks with this name exist at the same hierarchy level (e.g. the inport and outport model port blocks of an FMU).",
     )
     target_model_name: str = Field(description="Model of the second side, e.g. 'ReceiverModel'")
     target_port_block_name: str = Field(
@@ -164,9 +164,9 @@ class ConnectModelPortBlockToModelPortBlockInput(BaseModel):
     )
     target_group_path: str = Field(
         default="",
-        description="Optional port group inside that block, e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
+        description="Optional port group inside that model port block, e.g. 'StrucPort/SineWaveBus1'. Empty = the whole model port block. Must not point to a single port.",
     )
     target_port_block_direction: Optional[PortBlockDirection] = Field(
         default=None,
-        description="Optional: 'inport' or 'outport'. Only needed when several blocks with this name exist at the same hierarchy level.",
+        description="Optional: 'inport' or 'outport'. Only needed when several model port blocks with this name exist at the same hierarchy level.",
     )

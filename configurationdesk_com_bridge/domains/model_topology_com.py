@@ -690,9 +690,9 @@ def list_model_ports(
     result to the matching model port blocks. A bare name matches blocks at
     every hierarchy level; each entry's ``port_block_path`` tells them apart.
 
-    ``ports`` lists the direct children of each block. ``leaf_ports`` lists
-    every model port, including ports nested in port groups, with the
-    ``port_path`` inside its block.
+    ``ports`` lists the direct children of each model port block. ``leaf_ports``
+    lists every model port, including ports nested in port groups, with the
+    ``port_path`` inside its model port block.
     """
     refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
     if port_block_name:
@@ -751,9 +751,9 @@ def _resolve_port_endpoint(
 ) -> dict[str, Any]:
     """Resolve ``model / model port block / port path`` to one model port.
 
-    Returns the endpoint, or an ``{"error": True, ...}`` dict. Blocks with the
-    same name at the same hierarchy level (e.g. the inport and outport blocks
-    of an FMU) are told apart by *port_path*.
+    Returns the endpoint, or an ``{"error": True, ...}`` dict. Model port blocks
+    with the same name at the same hierarchy level (e.g. the inport and outport
+    model port blocks of an FMU) are told apart by *port_path*.
     """
     refs = collect_model_port_blocks(connection.model_topology.Item(model_name), model_name)
     matches = match_model_port_blocks(refs, model_name, port_block_name)
@@ -854,13 +854,8 @@ def connect_model_port_to_model_port(
     ``ActiveApplication.ConnectObjects`` applies ConfigurationDesk's mapping
     rules itself and raises an exception for mappings it refuses. For a created
     link, the conflicts that appeared with it are read from the conflict export,
-    which carries the Conflicts Viewer texts. ConnectObjects also adds blocks
-    that are not yet in the signal chain.
-
-    Domain ref: ConfigurationDesk Automating Tool Handling,
-    ICaActiveApplication.ConnectObjects and ICaAlgorithms.ExportConflictsToXML;
-    ConfigurationDesk Real-Time Implementation Guide, "Methods for Model Port
-    Mapping".
+    which carries the Conflicts Viewer texts. ConnectObjects also adds model
+    port blocks that are not yet in the signal chain.
     """
     source = _resolve_port_endpoint(
         connection, source_model_name, source_port_block_name, source_port_path
@@ -932,9 +927,10 @@ def _resolve_group_endpoint(
     group_path: str,
     direction: Optional[str],
 ) -> dict[str, Any]:
-    """Resolve ``model / model port block [/ port group path]`` to a block or port group.
+    """Resolve ``model / model port block [/ port group path]`` to its endpoint.
 
-    Returns the endpoint, or an ``{"error": True, ...}`` dict. Blocks with the
+    The endpoint is the model port block or a port group inside it. Returns the
+    endpoint, or an ``{"error": True, ...}`` dict. Model port blocks with the
     same name at the same hierarchy level are told apart by *direction* or by a
     *group_path* that exists in only one of them.
     """
@@ -954,7 +950,8 @@ def _resolve_group_endpoint(
                 "reason": "model_port_block_not_found",
                 "available_port_blocks": distinct_paths(refs),
                 "detail": (
-                    f"Model '{model_name}' has no {direction} block named '{port_block_name}'."
+                    f"Model '{model_name}' has no {direction} model port block named "
+                    f"'{port_block_name}'."
                 ),
             }
 
@@ -1062,11 +1059,6 @@ def connect_model_port_block_to_model_port_block(
     nested port groups), maps outports to inports, skips inports that already
     have a source, keeps existing links, and returns only the new links. The
     conflicts are read once before and once after the operation.
-
-    Domain ref: ConfigurationDesk Automating Tool Handling,
-    ICaAlgorithms.ConnectObjectsAutomatically and ExportConflictsToXML;
-    ConfigurationDesk Real-Time Implementation Guide, "Mapping Algorithm for
-    Model Port Blocks With Structured Data Ports".
     """
     source = _resolve_group_endpoint(
         connection, source_model_name, source_port_block_name, source_group_path, source_direction

@@ -358,8 +358,8 @@ ports to model ports by name across the project.
    model port block, and optionally a group path inside it (e.g. "StrucPort/SineWaveBus1").
    ConfigurationDesk pairs the ports by name and maps outports to inports; the order of the
    two sides does not matter. Pass `*_port_block_direction` ("inport"/"outport") only when the
-   tool reports AMBIGUOUS_TARGET for blocks with the same name at the same level, after asking
-   the user which block is meant.
+   tool reports AMBIGUOUS_TARGET for model port blocks with the same name at the same level,
+   after asking the user which model port block is meant.
 2. Report the created `links` with their `warnings`, any `other_links` (links ConfigurationDesk
    created outside the two sides), and the `unconnected_ports`. Status
    "nothing_connected" means no unconnected ports with matching names were found.

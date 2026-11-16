@@ -532,13 +532,13 @@ def _group_endpoint_error_response(result: dict) -> str:
             error_code="AMBIGUOUS_TARGET",
             recovery_hint=(
                 "Several model port blocks share this name at the same hierarchy level, e.g. "
-                "the inport and outport blocks of an FMU."
+                "the inport and outport model port blocks of an FMU."
             ),
             next_action=(
-                "Do NOT pick one yourself. Ask the user which block is meant, offering these "
-                f"candidates: {candidates}. Then retry with {side}_port_block_direction set to "
-                "its direction ('inport' or 'outport'), or with a group path that exists only in "
-                "that block."
+                "Do NOT pick one yourself. Ask the user which model port block is meant, offering "
+                f"these candidates: {candidates}. Then retry with {side}_port_block_direction set "
+                "to its direction ('inport' or 'outport'), or with a group path that exists only "
+                "in that model port block."
             ),
             candidates=candidates,
         )

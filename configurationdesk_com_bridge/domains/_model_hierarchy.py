@@ -119,7 +119,7 @@ def normalize_block_path(value: str) -> str:
 
 
 def iter_leaf_ports(block: Any) -> Iterator[tuple[tuple[str, ...], Any]]:
-    """Yield ``(path inside the block, model port)`` for every model port of *block*.
+    """Yield ``(path inside the model port block, model port)`` for every model port of *block*.
 
     Model ports can be nested in port groups (e.g. structured data ports or
     the bus hierarchy of a bus simulation container), so the walk descends

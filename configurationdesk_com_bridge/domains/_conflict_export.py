@@ -1,9 +1,8 @@
 """Read ConfigurationDesk conflicts as the Conflicts Viewer shows them.
 
-Uses ``ICaAlgorithms.ExportConflictsToXML`` (ConfigurationDesk Automating Tool
-Handling, ICaAlgorithms). The export keeps the Conflicts Viewer hierarchy
-(context set > conflict > involved elements) and its display texts. Must be
-called on the STA thread.
+Uses ``ICaAlgorithms.ExportConflictsToXML``. The export keeps the Conflicts
+Viewer hierarchy (context set > conflict > involved elements) and its display
+texts. Must be called on the STA thread.
 """
 
 from __future__ import annotations
