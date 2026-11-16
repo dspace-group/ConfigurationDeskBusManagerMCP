@@ -5,9 +5,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-ApplicationProcessMode = Literal["per_model", "none", "existing", "new_shared"]
-
 from sources.services._pagination import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
+
+ApplicationProcessMode = Literal["per_model", "none", "existing", "new_shared"]
 
 
 class AddModelInput(BaseModel):
