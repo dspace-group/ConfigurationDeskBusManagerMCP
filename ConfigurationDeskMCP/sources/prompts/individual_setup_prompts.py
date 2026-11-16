@@ -221,17 +221,19 @@ wired to bus or I/O function ports.
 {_ENSURE_RUNNING}
 
 ## Step 1 — Add the model
-Call `add_model` with path="{model_path}".
-- .fmu — Functional Mock-up Unit (FMU)
-- .slx / .mdl — Simulink model (model analysis required).
+Call `add_model` with paths=["{model_path}"]. Choose `application_process_mode` from the
+request: "per_model" (default, one preconfigured application process per model),
+"none", "existing" (add to an existing application process), or "new_shared" (one new
+application process for all listed models). Several model files can be added in one call.
+- .slx / .mdl — Simulink model (analyzed automatically while being added).
 - .sic — Simulink implementation container.
 - .bsc — Bus simulation container. Contains configured bus communication. It can be used to implement 
 the bus communication in a real-time application (RTA) or offline simulation application (OSA).
 - .fmu — Functional Mock-up Unit (FMI-based model implementation).
 
-## Step 2 — Analyze (Simulink model only)
-Call `analyze_models` to detect input/output ports and create model port blocks.
-Skip for .sic/.bsc/.fmu (already analyzed).
+## Step 2 — Re-analyze (Simulink model only, when needed)
+`add_model` already analyzes Simulink models. Call `analyze_models` only after the
+Simulink model changed. Skip for .sic/.bsc/.fmu.
 
 ## Step 3 — Inspect
 - `list_models` — confirm the model and its model analysis state.
