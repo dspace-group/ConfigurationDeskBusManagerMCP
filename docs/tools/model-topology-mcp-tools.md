@@ -73,8 +73,8 @@ the bus hierarchy of a bus simulation container
 ## Connecting Model Ports to Model Ports
 
 `connect_model_port_to_model_port` creates one mapping line between two model
-ports, for example `masterAppl / Data Outport1 / data1` to
-`slaveAppl / Data Inport1 / data1`. Each side is given as model name, model port
+ports, for example `SenderModel / Data Outport1 / data1` to
+`ReceiverModel / Data Inport1 / data1`. Each side is given as model name, model port
 block (bare name or hierarchy path), and `port_path` from `leaf_ports`.
 
 The tool calls ConfigurationDesk's `ConnectObjects`, which applies the

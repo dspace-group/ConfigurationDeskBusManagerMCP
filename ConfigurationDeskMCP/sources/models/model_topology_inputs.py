@@ -183,16 +183,16 @@ class ListModelPortsInput(BaseModel):
 
 class ConnectModelPortToModelPortInput(BaseModel):
     source_model_name: str = Field(
-        description="Model that contains the source model port, e.g. 'masterAppl'"
+        description="Model that contains the source model port, e.g. 'SenderModel'"
     )
     source_port_block_name: str = Field(
-        description="Model port block of the source port: bare name or hierarchy path, e.g. 'Data Outport1' or 'masterAppl/Subsystem/Data Outport1'. Use list_model_port_blocks to discover valid names."
+        description="Model port block of the source port: bare name or hierarchy path, e.g. 'Data Outport1' or 'SenderModel/Subsystem/Data Outport1'. Use list_model_port_blocks to discover valid names."
     )
     source_port_path: str = Field(
         description="Path of the source port inside its model port block; separate nested port groups with '/', e.g. 'data1' or 'Group1/Group2/Speed'. Use `port_path` from `leaf_ports` of list_model_ports."
     )
     target_model_name: str = Field(
-        description="Model that contains the target model port, e.g. 'slaveAppl'"
+        description="Model that contains the target model port, e.g. 'ReceiverModel'"
     )
     target_port_block_name: str = Field(
         description="Model port block of the target port: bare name or hierarchy path, e.g. 'Data Inport1'. Use list_model_port_blocks to discover valid names."
