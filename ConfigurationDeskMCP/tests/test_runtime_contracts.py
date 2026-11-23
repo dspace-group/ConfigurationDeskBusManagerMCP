@@ -4,6 +4,7 @@
 import asyncio
 import concurrent.futures
 import json
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -216,23 +217,50 @@ def test_get_status_uses_non_reconnecting_dispatch(monkeypatch):
     assert payload["project"] == "DemoProject"
 
 
+def test_diagnose_connection_reports_unavailable_pywin32(monkeypatch):
+    def unexpected_connection():
+        raise AssertionError("Missing pywin32 must not trigger bridge inspection")
+
+    monkeypatch.setitem(sys.modules, "win32com", None)
+    monkeypatch.setitem(sys.modules, "win32com.client", None)
+    monkeypatch.setattr(application_service, "get_connection", unexpected_connection)
+
+    payload = json.loads(asyncio.run(application_service.diagnose_connection()))
+
+    assert payload["success"] is True
+    assert payload["diagnostics"] == {"pywin32_installed": False}
+
+
 def test_diagnose_connection_uses_non_reconnecting_health_check(monkeypatch):
     connection = SimpleNamespace(state=SimpleNamespace(value="CONNECTED"))
+    calls = []
+
+    def not_registered(*args):
+        raise FileNotFoundError("mock COM registration")
+
+    client = SimpleNamespace(GetActiveObject=lambda product_id: SimpleNamespace())
+    registry = SimpleNamespace(HKEY_CLASSES_ROOT=0, OpenKey=not_registered)
+    monkeypatch.setitem(sys.modules, "win32com", SimpleNamespace(client=client))
+    monkeypatch.setitem(sys.modules, "win32com.client", client)
+    monkeypatch.setitem(sys.modules, "winreg", registry)
 
     async def fake_dispatch(function, passed_connection, *args, **kwargs):
         assert function is application_service._inspect_connection
         assert passed_connection is connection
         assert kwargs["reconnect"] is False
-        assert kwargs["timeout_ms"] == application_service._OBSERVATION_TIMEOUT_MS
+        assert kwargs["timeout_ms"] == observations.OBSERVATION_TIMEOUT_MS
+        calls.append(function)
         raise BridgeConnectionError("offline")
 
     monkeypatch.setattr(application_service, "get_connection", lambda: connection)
-    monkeypatch.setattr(application_service, "dispatch", fake_dispatch)
+    monkeypatch.setattr(observations, "dispatch", fake_dispatch)
 
     payload = json.loads(asyncio.run(application_service.diagnose_connection()))
 
     assert payload["success"] is True
+    assert payload["diagnostics"]["pywin32_installed"] is True
     assert payload["diagnostics"]["health_check"] is False
+    assert calls == [application_service._inspect_connection]
 
 
 def test_add_application_relies_on_add_activation_for_new_items():

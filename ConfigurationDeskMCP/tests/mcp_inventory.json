@@ -67,6 +67,7 @@
     "remove_model",
     "remove_project",
     "remove_working_view",
+    "replace_communication_matrix_assignment",
     "replace_model",
     "save_project",
     "scan_hardware",

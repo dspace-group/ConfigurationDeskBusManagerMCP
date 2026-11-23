@@ -135,7 +135,9 @@ _TOOL_CATEGORIES = """\
 
 ## Communication Matrix
 - `add_communication_matrix` / `remove_communication_matrix`
+- `replace_communication_matrix_assignment` — Replace a matrix assigned to a bus configuration with another loaded matrix
 - `list_matrices` / `find_matrix_elements`
+- `set_matrix_element_property` — Set communication-matrix element properties
 
 ## Build Management
 - `build_application` — Build, download, and start
@@ -559,6 +561,7 @@ explicitly requested.
 | "Create a bus configuration" | `create_bus_configuration` | `create_io_function_block` |
 | "Create an I/O / function block" | `create_io_function_block` | `create_bus_configuration` |
 | "Load .arxml/.dbc/.ldf database" | `add_communication_matrix` | anything else |
+| "Replace/update the matrix assigned to a bus config" | `add_communication_matrix` (new file), then `replace_communication_matrix_assignment` | `remove_communication_matrix` + re-assign, `replace_model` |
 | "Assign an ECU to a bus config" | `assign_ecu_to_bus_config` | `assign_matrix_to_bus_config` |
 | "Assign an EXACT PDU/signal" | `assign_matrix_to_bus_config` (precise matrix_xpath) | `assign_ecu_to_bus_config` |
 | "Add a signal/PDU/controller feature" | `add_feature_to_bus_element` | — |
@@ -697,6 +700,26 @@ Do NOT retry a call with `retryable=false` — follow its `recovery_hint` instea
 | `INVALID_VALUE_TYPE` | The value passed to a property setter is the wrong type — check the property catalog resources for the expected type. |
 | `FUNCTION_PORT_PROPERTY_NOT_FOUND` | The named function port property/port does not exist. Re-run `find_bus_config_elements` to verify the actual port names — do NOT call `generate_bus_containers` as recovery. |
 
+For `replace_communication_matrix_assignment`, see the matrix replacement
+errors below. Always follow the recovery guidance in the actual tool response.
+
+## Matrix replacement errors
+These errors apply to `replace_communication_matrix_assignment`.
+
+| error_code | Meaning / fix |
+|---|---|
+| `BUS_CONFIG_NOT_FOUND` | The named bus configuration does not exist. Call `list_bus_configurations` and use an exact name. |
+| `MATRIX_NOT_FOUND` | The named communication matrix is not loaded. Call `add_communication_matrix` or pick a name from `list_matrices`. |
+| `MATRIX_NOT_ASSIGNED` | The bus configuration has no (matching) assigned matrix node. Use a listed node name or assign elements first. |
+| `AMBIGUOUS_MATRIX_ASSIGNMENT` | Specify `assigned_matrix_name` when several matrices are assigned. If that name identifies different sources, give the intended assigned node a unique name in ConfigurationDesk first. |
+| `AMBIGUOUS_MATRIX_NAME` | The new matrix name matches several loaded matrices. Use distinct filenames for matrix versions before importing and select a unique loaded name. Inspect assignments before removing or reloading duplicates. No replacement was performed. |
+| `MATRIX_SOURCE_UNAVAILABLE` | Required source file name, path, or content hash could not be read before replacement. Inspect the matrix source properties in ConfigurationDesk. No replacement was performed. |
+| `MATRIX_ALREADY_ASSIGNED` | The requested source is already assigned. Select an unassigned matrix version. No setting or assignment was changed. |
+| `REPLACING_CONDITIONS_UNAVAILABLE` | The original global replacing-conditions setting could not be read. No mutation was performed. Inspect the option in ConfigurationDesk before retrying. |
+| `REPLACING_CONDITIONS_SET_FAILED` | The requested override could not be written and confirmed by read-back. No replacement was performed. Inspect the reported restoration status and the ConfigurationDesk option before retrying. |
+| `REPLACING_CONDITIONS_RESTORE_FAILED` | The original global setting could not be restored and confirmed by read-back. Stop, restore the reported previous value in ConfigurationDesk Options, and inspect the assignment before continuing. Replacement and restoration errors are preserved in the response. |
+| `VERIFICATION_FAILED` | The replacement COM command returned, but its outcome is unconfirmed. Changes may already be fully or partially applied. Do not assume no change or retry automatically. Use `find_bus_config_elements` and `check_conflicts` to inspect the current state first. |
+
 ## Retry policy
 Retry at most once, and only for `retryable=true` codes. On a second failure or
 any `retryable=false` code, STOP and explain the failure to the user.
@@ -729,7 +752,7 @@ def get_valid_values_reference() -> str:
     "configurationdesk://reference/error-recovery",
     name="error_recovery_reference",
     title="Error Recovery Reference",
-    description="Error code catalog with retryable flags and recovery actions (COM/connection, bridge/lifecycle, precondition next_action map, common domain errors) plus the retry policy",
+    description="Error code catalog with retryable flags and recovery actions (COM/connection, bridge/lifecycle, precondition next_action map, common domain errors, matrix replacement errors) plus the retry policy",
     mime_type="text/markdown",
 )
 def get_error_recovery_reference() -> str:

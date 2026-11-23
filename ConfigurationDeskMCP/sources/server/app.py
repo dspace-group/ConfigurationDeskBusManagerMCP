@@ -148,6 +148,7 @@ prerequisites.
 - "Load communication database (.arxml/.dbc/.ldf)" → `add_communication_matrix`
 - "Add .arxml file" or "add .dbc file" or "add .ldf file" → `add_communication_matrix`
 - "Import bus network definition" → `add_communication_matrix`
+- "Replace/update the matrix assigned to a bus configuration" or "switch a bus configuration to a new ARXML/DBC/LDF version" → `add_communication_matrix` for the new file, then `replace_communication_matrix_assignment` (NOT `remove_communication_matrix` + re-assign, NOT `replace_model`)
 
 ## DOMAIN HIERARCHY (understand what each artifact is)
 - **Communication Matrix** (.arxml/.dbc/.ldf) = network definition file → `add_communication_matrix`
