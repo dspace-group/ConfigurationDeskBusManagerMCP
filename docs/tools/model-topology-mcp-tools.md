@@ -30,7 +30,10 @@ ports available for connection, and create application processes.
 4. Use `add_model_to_signal_chain` for all model port blocks or
    `add_model_port_block_to_signal_chain` for a selected one.
 5. Create an application process and connect function ports to model ports.
-6. Call `check_conflicts` before building.
+6. After connections between models are added or deleted, the AI recommends
+   `optimize_application_process_configuration` for the affected application
+   processes and runs it once the user confirms.
+7. Call `check_conflicts` before building.
 
 ## Bulk and Selective Exposure
 

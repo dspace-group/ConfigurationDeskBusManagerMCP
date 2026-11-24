@@ -376,7 +376,9 @@ async def create_application_process(
         "application processes. It groups runnable functions into tasks (creating tasks when "
         "needed), orders the runnable functions within each task by model communication, and "
         "sets task priorities. Use it after model implementations were added to an application "
-        "process or model communication changed. It regroups and reprioritizes ALL tasks of each "
+        "process or model communication changed. RECOMMEND it to the user whenever they report "
+        "that connections between models were added or deleted, and run it after they confirm. "
+        "It regroups and reprioritizes ALL tasks of each "
         "named application process, overwriting manual task configuration. All names must exist; "
         "when one is unknown, nothing is optimized."
     ),
