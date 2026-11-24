@@ -233,6 +233,7 @@ def dispatch_returns() -> dict[str, Any]:
         "remove_model": {"verified": True},
         "analyze_models": {},
         "create_application_process": _create_application_process,
+        "optimize_application_processes": lambda names: {"optimized": list(names)},
         "list_processing_unit_application_names": ["ProcessingUnitApplication"],
         "list_models": [
             "CentralGatewayECU_64-bit",

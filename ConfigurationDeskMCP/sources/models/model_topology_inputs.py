@@ -133,6 +133,21 @@ class CreateApplicationProcessInput(BaseModel):
     )
 
 
+class OptimizeApplicationProcessConfigurationInput(BaseModel):
+    application_processes: list[str] = Field(
+        min_length=1,
+        description=(
+            "Names of the application processes to optimize, e.g. ['ApplicationProcess_1']. "
+            "A single name string is also accepted."
+        ),
+    )
+
+    @field_validator("application_processes", mode="before")
+    @classmethod
+    def _single_name_to_list(cls, value):
+        return [value] if isinstance(value, str) else value
+
+
 class ListModelsInput(BaseModel):
     pass
 

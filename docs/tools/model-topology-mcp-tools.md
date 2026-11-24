@@ -14,6 +14,7 @@ ports available for connection, and create application processes.
 | `remove_model` | Remove a model from the project. | Destructive; related connections can be removed. |
 | `analyze_models` | Analyze loaded models and prepare their public interfaces. | May take time for large models. |
 | `create_application_process` | Create an application process, with or without a default periodic task. | Requires a processing unit application. Send `provide_default_task` whenever the request states it; it is only elicited from the user when omitted, and falls back to `true` when unanswered. Call once per application process when several are requested. |
+| `optimize_application_process_configuration` | Run Optimize Configuration on one or more named application processes. | Destructive to manual task setup: regroups runnable functions into tasks, orders them, and sets task priorities. Nothing is optimized when a name is unknown. |
 | `list_models` | List loaded models and file paths. | Read-only. |
 | `add_model_to_signal_chain` | Make all model port blocks of one model available for connection. | Use for bulk exposure. |
 | `add_model_port_block_to_signal_chain` | Make one named model port block available. | Use `list_model_port_blocks` first when the name is unknown. Rejects names that exist at several hierarchy levels. |

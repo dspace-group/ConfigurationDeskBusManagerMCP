@@ -581,6 +581,55 @@ async def create_application_process(
         return error_response(str(e), transient=False)
 
 
+async def optimize_application_process_configuration(application_processes: list[str]) -> str:
+    """Run Optimize Configuration on the named application processes.
+
+    All names are resolved first; nothing is optimized when one is unknown.
+    """
+    try:
+        conn = get_connection()
+        available = list(await dispatch(model_topology_com.list_application_process_names, conn))
+        targets: list[str] = []
+        unknown: list[str] = []
+        for requested in application_processes:
+            match = _match_name(available, requested)
+            if match is None:
+                unknown.append(requested)
+            elif match not in targets:
+                targets.append(match)
+        if unknown:
+            return error_response(
+                f"Application process(es) not found: {', '.join(unknown)}. "
+                f"Available: {', '.join(available) or '(none)'}.",
+                transient=False,
+                next_action=(
+                    "Use the exact names of existing application processes, then call "
+                    "`optimize_application_process_configuration` again."
+                ),
+            )
+        result = await dispatch(
+            model_topology_com.optimize_application_processes,
+            conn,
+            targets,
+            timeout_ms=120_000,
+        )
+        if result.get("error"):
+            return error_response(result["detail"], transient=False)
+        optimized = result.get("optimized", targets)
+        return success_response(
+            message=(
+                f"Optimized the configuration of application process(es): {', '.join(optimized)}."
+            ),
+            verified=True,
+            application_processes=optimized,
+        )
+    except BridgeError as exc:
+        return tool_error_result(exc)
+    except Exception as e:
+        logger.exception("Error optimizing application process configuration")
+        return error_response(str(e), transient=False)
+
+
 async def list_models() -> str:
     try:
         conn = get_connection()
