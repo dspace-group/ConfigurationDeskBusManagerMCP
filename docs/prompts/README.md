@@ -42,7 +42,7 @@ schemas and annotations.
 ## Tool-to-Prompt Map
 
 For a compact entry point for every registered tool, see the
-[Tool-to-Prompt Map](tool-map.md). It lists all 79 tools exactly once with the
+[Tool-to-Prompt Map](tool-map.md). It lists all 80 tools exactly once with the
 closest prompt or domain guide and a short copy-and-adapt example request. The
 map is checked by the test suite so it stays aligned with the live MCP registry.
 
