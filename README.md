@@ -193,7 +193,7 @@ flowchart TB
 | Model Topology | `model_topology` | `add_model`, `analyze_models`, `replace_model` |
 | Hardware | `hardware` | `add_hardware_platform`, `scan_hardware` |
 | Bus Configuration | `bus_config` | `create_bus_configuration`, `assign_ecu_to_bus_config` |
-| Communication Matrix | `matrix` | `add_communication_matrix`, `assign_matrix_to_bus_config` |
+| Communication Matrix | `matrix` | `add_communication_matrix`, `assign_matrix_to_bus_config`, `replace_communication_matrix_assignment` |
 | Bus Access | `bus_access` | `create_io_function_block`, `assign_bus_access` |
 | I/O Functions | `io_functions` | `add_io_function_block`, `list_io_function_block_types` |
 | Configuration | `configuration` | `list_configuration` |

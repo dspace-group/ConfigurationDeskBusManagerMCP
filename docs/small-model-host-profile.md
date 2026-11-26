@@ -38,6 +38,8 @@ authoritative.
   feature or bus-element value with `set_bus_config_element_property`, an
   exposed function port value with `set_function_port_property`, and a
   hardware I/O value with `set_io_function_block_property`.
+- To move a bus configuration to an updated matrix file, load it with `add_communication_matrix`,
+  then call `replace_communication_matrix_assignment`; do not remove and re-assign the matrix.
 - Use `add_hardware_platform` only for physical SCALEXIO, MicroAutoBox III, or
   MicroLabBox II hardware with an address. Use `import_hardware_topology` for
   an `.htfx` file.

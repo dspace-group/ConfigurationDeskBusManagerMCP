@@ -80,6 +80,76 @@ async def remove_communication_matrix(
 
 
 @mcp.tool(
+    name="replace_communication_matrix_assignment",
+    description=(
+        "Replace a communication matrix that is assigned to a bus configuration with "
+        "another loaded communication matrix, e.g. an updated ARXML/DBC/LDF version. "
+        "Load the new matrix first with add_communication_matrix; it must not already be "
+        "assigned to the bus configuration and its name must identify exactly one loaded "
+        "matrix. Ambiguous names are rejected before replacement. Success is verified by "
+        "source file name, path, and content hash, not by the unchanged node name. "
+        "Affects all parts of the bus configuration "
+        "(Simulated ECUs, Inspection, Manipulation, Bus Access Requests). Assigned elements "
+        "found in the new matrix are replaced and take their settings from it; user-defined "
+        "matrix element settings are lost. Elements that cannot be identified are kept in a "
+        "'<node> (deprecated <n>)' node. New elements are not assigned automatically. The "
+        "matrix node name in the bus configuration stays unchanged. Call check_conflicts "
+        "afterwards. NOT for loading a matrix (add_communication_matrix) or replacing a "
+        "behavior model (replace_model)."
+    ),
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False,
+        "openWorldHint": False,
+    },
+)
+async def replace_communication_matrix_assignment(
+    bus_config_name: Annotated[
+        str,
+        Field(
+            description="Exact bus configuration name as shown by list_bus_configurations, e.g. 'CAN_Restbus'",
+        ),
+    ],
+    new_matrix_name: Annotated[
+        str,
+        Field(
+            description="Unique name of the loaded communication matrix to assign instead, as shown by list_matrices, e.g. 'vehicle_can_v2'. Use distinct filenames for matrix versions before importing; duplicate loaded names are rejected.",
+        ),
+    ],
+    assigned_matrix_name: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Name of the communication matrix node in the bus configuration to replace, "
+                "e.g. 'vehicle_can'. Optional when exactly one matrix is assigned to the bus configuration."
+            ),
+        ),
+    ] = None,
+    use_additional_replacing_conditions: Annotated[
+        bool | None,
+        Field(
+            description=(
+                "Optionally enable (true) or disable (false) the additional replacing conditions "
+                "for this replacement only; its original value must be readable before mutation. "
+                "The requested override is read back before replacement; an unconfirmed override "
+                "aborts replacement. "
+                "The original setting is restored and read back on completion or failure. "
+                "A restoration failure is reported as an error and stops the workflow. "
+                "Omit to use the current setting."
+            ),
+        ),
+    ] = None,
+) -> str:
+    return await svc.replace_communication_matrix_assignment(
+        bus_config_name,
+        new_matrix_name,
+        assigned_matrix_name,
+        use_additional_replacing_conditions,
+    )
+
+
+@mcp.tool(
     name="list_matrices",
     description=(
         "List all loaded communication matrices showing two views: "
