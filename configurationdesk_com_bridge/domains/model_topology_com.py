@@ -228,6 +228,36 @@ def add_models_to_application_process(
     }
 
 
+def optimize_application_processes(
+    connection, application_process_names: list[str]
+) -> dict[str, Any]:
+    """Run ``Algorithms.OptimizeConfiguration`` on the named application processes in one call.
+
+    ConfigurationDesk rejects the whole call when any entity is invalid, so every
+    name is resolved before the command is issued.
+    """
+    try:
+        atm_relation = connection.relations.Item("ApplicationConfiguration")
+    except Exception as exc:
+        return {"error": True, "detail": f"ApplicationConfiguration relation not available: {exc}"}
+    processes = {
+        _element_name(process): process for process in _iter_application_processes(atm_relation)
+    }
+    missing = [name for name in application_process_names if name not in processes]
+    if missing:
+        return {
+            "error": True,
+            "detail": (
+                f"Application process(es) not found: {', '.join(missing)}. "
+                f"Available: {', '.join(sorted(processes)) or '(none)'}."
+            ),
+        }
+    connection.algorithms.OptimizeConfiguration(
+        _com_array([processes[name] for name in application_process_names])
+    )
+    return {"optimized": list(application_process_names)}
+
+
 def create_preconfigured_application_processes(
     connection, model_names: list[str], processing_unit_application_name: str
 ) -> dict[str, Any]:

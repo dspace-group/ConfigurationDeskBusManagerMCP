@@ -118,6 +118,7 @@ _TOOL_CATEGORIES = """\
 - `add_model` / `replace_model` / `remove_model`
 - `analyze_models` — Analyze model port blocks and interfaces
 - `create_application_process` — Create an application process, with or without a periodic default task (send `provide_default_task` whenever the request states it; model-less; optional bus-config assignment; optional `processing_unit_application`, otherwise created if missing, reused if unique, or chosen by the user; call once per application process when several are requested)
+- `optimize_application_process_configuration` — Run Optimize Configuration on named application processes (groups runnable functions into tasks, orders them, sets task priorities; overwrites manual task setup)
 - `list_models` — List all models
 
 ## Hardware Topology

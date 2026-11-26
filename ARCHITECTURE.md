@@ -15,7 +15,7 @@
 The project is a **standalone MCP server** split into two packages:
 
 - `configurationdesk_com_bridge` - Low-level COM bridge with a dedicated STA thread
-- `ConfigurationDeskMCP` - FastMCP server exposing 79 tools, 11 resources, and 15 prompts
+- `ConfigurationDeskMCP` - FastMCP server exposing 80 tools, 11 resources, and 15 prompts
 
 ```mermaid
 flowchart TB
@@ -25,7 +25,7 @@ flowchart TB
     subgraph MCP["ConfigurationDeskMCP  (sources/)"]
         direction TB
         Server["FastMCP Server"]
-        Tools["Tools (12 modules, 79 tools)"]
+        Tools["Tools (12 modules, 80 tools)"]
         Resources["Resources (guides)"]
         Prompts["Prompts (workflow)"]
         Services["Services (12 modules)"]

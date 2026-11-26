@@ -57,6 +57,7 @@
     "list_working_views",
     "open_project",
     "open_project_from_backup",
+    "optimize_application_process_configuration",
     "redo",
     "refresh_platforms",
     "remove_application",

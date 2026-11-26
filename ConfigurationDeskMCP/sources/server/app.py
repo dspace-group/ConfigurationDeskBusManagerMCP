@@ -160,6 +160,10 @@ prerequisites.
 - **Bus simulation container** (.bsc) = packaged bus communication → `generate_bus_containers`. Consumers: VEOS (offline simulation application) and ConfigurationDesk (real-time application on SCALEXIO / MicroAutoBox III / MicroLabBox II, via `add_model`). BSC output is not VEOS-only.
 - Most workflows use: matrix → bus config → features/property edits → model/application-process/hardware setup, with optional BSC generation only when the user asks for it.
 
+## MODEL COMMUNICATION CHANGES
+- When the user reports that connections between models were added or deleted (model communication changed, e.g. in the ConfigurationDesk UI), RECOMMEND running `optimize_application_process_configuration` on the application processes that contain the affected models; use `list_configuration` to find them.
+- Only recommend it; run it after the user confirms, because it regroups and reprioritizes all tasks of those application processes and overwrites manual task configuration.
+
 ## ERROR RECOVERY
 - `COM_DISCONNECTED` → call `start_configurationdesk`
 - `COM_TIMEOUT` → retry once after short pause

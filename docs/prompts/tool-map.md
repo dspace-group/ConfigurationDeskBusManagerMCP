@@ -69,6 +69,7 @@ The table is checked by `ConfigurationDeskMCP/tests/test_prompt_tool_map.py` so 
 | `remove_model` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | Check connections, then remove only model `obsolete_model`; do not remove other configured models. |
 | `analyze_models` | Model topology | Prompt: `add_behavior_model` | Analyze loaded Simulink models before exposing or connecting their ports; skip this for already analyzed SIC, BSC, or FMU files. |
 | `create_application_process` | Model topology | Prompt: `create_application_process` | To work without a behavior model, create application process RestbusProcess with a default task and assign only `CAN_Restbus` to it.  |
+| `optimize_application_process_configuration` | Model topology | [Model Topology](../tools/model-topology-mcp-tools.md) | After adding models to `ApplicationProcess_1`, run Optimize Configuration on it so its runnable functions are grouped into prioritized tasks. |
 | `list_models` | Model topology | Prompt: `add_behavior_model` | List loaded models and their file paths before selecting one for an application process, port exposure, replacement, or removal. |
 | `add_model_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | Expose every model port block of model `plant_model` in the signal chain; use this only when all of them are intended. |
 | `add_model_port_block_to_signal_chain` | Model topology | Prompt: `add_behavior_model` | List model port blocks for `plant_model`, then expose only its named block `EngineSpeed` in the signal chain. |

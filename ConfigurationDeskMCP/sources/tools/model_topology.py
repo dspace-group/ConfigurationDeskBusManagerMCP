@@ -13,6 +13,7 @@ from sources.models.model_topology_inputs import (
     CreateApplicationProcessInput,
     ListModelPortBlocksInput,
     ListModelPortsInput,
+    OptimizeApplicationProcessConfigurationInput,
     RemoveModelInput,
     ReplaceModelInput,
 )
@@ -366,6 +367,33 @@ async def create_application_process(
     return await svc.create_application_process(
         name, bus_config_names, provide_default_task, processing_unit_application
     )
+
+
+@mcp.tool(
+    name="optimize_application_process_configuration",
+    description=(
+        "Run ConfigurationDesk's 'Optimize Configuration' command on one or more existing "
+        "application processes. It groups runnable functions into tasks (creating tasks when "
+        "needed), orders the runnable functions within each task by model communication, and "
+        "sets task priorities. Use it after model implementations were added to an application "
+        "process or model communication changed. RECOMMEND it to the user whenever they report "
+        "that connections between models were added or deleted, and run it after they confirm. "
+        "It regroups and reprioritizes ALL tasks of each "
+        "named application process, overwriting manual task configuration. All names must exist; "
+        "when one is unknown, nothing is optimized."
+    ),
+    annotations={
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+)
+@with_preconditions("connection", "project", "application", "application_process")
+async def optimize_application_process_configuration(
+    input: OptimizeApplicationProcessConfigurationInput,
+) -> str:
+    return await svc.optimize_application_process_configuration(input.application_processes)
 
 
 @mcp.tool(

@@ -20,6 +20,7 @@ COVERS = (
     "remove_model",
     "analyze_models",
     "create_application_process",
+    "optimize_application_process_configuration",
     "list_models",
     "add_model_to_signal_chain",
     "add_model_port_block_to_signal_chain",
@@ -337,6 +338,52 @@ def test_create_application_process_without_default_task(fake_bridge):
 
 def test_list_models(fake_bridge):
     run_ok(model_svc.list_models())
+
+
+def test_optimize_application_process_configuration(monkeypatch):
+    calls = _record_dispatch(monkeypatch, process_names=["AP_1", "AP_2", "AP_3"])
+
+    payload = run_ok(model_svc.optimize_application_process_configuration(["ap_1", "AP_3", "AP_1"]))
+
+    assert _call(calls, "optimize_application_processes") == [(["AP_1", "AP_3"],)]
+    assert payload["application_processes"] == ["AP_1", "AP_3"]
+
+
+def test_optimize_application_process_configuration_rejects_unknown_name(monkeypatch):
+    calls = _record_dispatch(monkeypatch, process_names=["AP_1"])
+
+    payload = run_raw(model_svc.optimize_application_process_configuration(["AP_1", "Missing"]))
+
+    assert payload["success"] is False
+    assert "Missing" in payload["error"]
+    assert not _call(calls, "optimize_application_processes")
+
+
+def test_server_instructions_recommend_optimize_after_model_connection_changes():
+    from sources.server.app import mcp
+
+    section = mcp.instructions.split("## MODEL COMMUNICATION CHANGES", 1)[1].split("##", 1)[0]
+    assert "`optimize_application_process_configuration`" in section
+    assert "RECOMMEND" in section
+
+
+def test_optimize_application_processes_issues_one_com_call(monkeypatch):
+    ap_1 = SimpleNamespace(Name="AP_1", Roles=["ApplicationProcess"])
+    ap_2 = SimpleNamespace(Name="AP_2", Roles=["ApplicationProcess"])
+    optimized = []
+    connection = SimpleNamespace(
+        relations=SimpleNamespace(Item=lambda _name: _pua_relation([ap_1, ap_2])),
+        algorithms=SimpleNamespace(OptimizeConfiguration=optimized.append),
+    )
+    monkeypatch.setattr(model_topology_com, "_com_array", list)
+
+    assert model_topology_com.optimize_application_processes(connection, ["AP_2"]) == {
+        "optimized": ["AP_2"]
+    }
+    assert optimized == [[ap_2]]
+    missing = model_topology_com.optimize_application_processes(connection, ["AP_3"])
+    assert missing["error"] is True and "AP_3" in missing["detail"]
+    assert len(optimized) == 1
 
 
 def test_add_model_to_signal_chain(fake_bridge):
