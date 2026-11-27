@@ -35,6 +35,7 @@ def error_response(
     recovery_hint: str = "",
     next_action: str = "",
     retryable: bool | None = None,
+    **details: Any,
 ) -> str:
     """Create a JSON-formatted error response string.
 
@@ -46,6 +47,7 @@ def error_response(
         next_action: Concrete guidance for what tool to call next.
             If empty, a default is provided based on transient flag.
         retryable: Explicit retryable flag. If None, derived from transient.
+        **details: Additional payload fields; they cannot override the fields above.
     """
     if retryable is None:
         retryable = transient
@@ -70,6 +72,7 @@ def error_response(
 
     return json.dumps(
         {
+            **details,
             "success": False,
             "error": message,
             "error_code": error_code,
